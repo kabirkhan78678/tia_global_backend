@@ -9,9 +9,15 @@ const createTransporter = () =>
     host: env.smtp.host,
     port: env.smtp.port,
     secure: env.smtp.secure,
+    requireTLS: env.smtp.port === 587,
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
     auth: {
       user: env.smtp.user,
       pass: env.smtp.password,
+    },
+    tls: {
+      servername: env.smtp.host,
     },
   });
 
@@ -115,44 +121,6 @@ Team TIA Global`,
   });
 };
 
-const sendPasswordResetApprovalEmail = async ({ userEmail, token, expiresAt }) => {
-  if (!env.admin.email) {
-    console.warn('ADMIN_EMAIL is not configured. Skipping reset approval email.');
-    return;
-  }
-
-  await sendEmail({
-    to: env.admin.email,
-    subject: 'Password Reset Approval Required',
-    text: `Hi Admin,
-
-A password reset request has been submitted.
-
-User email: ${userEmail}
-Reset token: ${token}
-Expires at: ${expiresAt.toISOString()}
-
-Approve this request using:
-POST /api/users/auth/forgot-password/approve
-Authorization: Bearer ADMIN_RESET_APPROVAL_SECRET
-Body: { "token": "${token}" }
-
-Team TIA Global`,
-    html: `
-      <p>Hi Admin,</p>
-      <p>A password reset request has been submitted.</p>
-      <p><strong>User email:</strong> ${userEmail}</p>
-      <p><strong>Reset token:</strong> ${token}</p>
-      <p><strong>Expires at:</strong> ${expiresAt.toISOString()}</p>
-      <p>Approve this request using:</p>
-      <pre>POST /api/users/auth/forgot-password/approve
-Authorization: Bearer ADMIN_RESET_APPROVAL_SECRET
-Body: { "token": "${token}" }</pre>
-      <p>Team TIA Global</p>
-    `,
-  });
-};
-
 const sendPasswordResetLinkEmail = async ({ to, token, expiresAt }) => {
   const resetUrl = `${env.frontend.resetPasswordUrl}?token=${token}`;
   const expiryText =
@@ -162,8 +130,6 @@ const sendPasswordResetLinkEmail = async ({ to, token, expiresAt }) => {
     to,
     subject: 'Reset Your TIA Global Password',
     text: `Hi,
-
-Your password reset request has been approved by admin.
 
 Use this link to change your password:
 ${resetUrl}
@@ -175,7 +141,6 @@ If you did not request this, please ignore this email.
 Team TIA Global`,
     html: `
       <p>Hi,</p>
-      <p>Your password reset request has been approved by admin.</p>
       <p><a href="${resetUrl}">Click here to change your password</a></p>
       <p>This link will expire at: ${expiryText}</p>
       <p>If you did not request this, please ignore this email.</p>
@@ -184,9 +149,38 @@ Team TIA Global`,
   });
 };
 
+const sendAdminPasswordResetLinkEmail = async ({ to, token, expiresAt }) => {
+  const resetUrl = `${env.frontend.resetPasswordUrl}?token=${token}&type=admin`;
+  const expiryText =
+    expiresAt instanceof Date ? expiresAt.toISOString() : new Date(expiresAt).toISOString();
+
+  await sendEmail({
+    to,
+    subject: 'Reset Your TIA Global Admin Password',
+    text: `Hi Admin,
+
+Use this link to reset your admin password:
+${resetUrl}
+
+This link will expire at: ${expiryText}
+
+If you did not request this, please ignore this email.
+
+Team TIA Global`,
+    html: `
+      <p>Hi Admin,</p>
+      <p>Use this link to reset your admin password:</p>
+      <p><a href="${resetUrl}">Reset admin password</a></p>
+      <p>This link will expire at: ${expiryText}</p>
+      <p>If you did not request this, please ignore this email.</p>
+      <p>Team TIA Global</p>
+    `,
+  });
+};
+
 module.exports = {
+  sendAdminPasswordResetLinkEmail,
   sendParentWelcomeEmail,
-  sendPasswordResetApprovalEmail,
   sendPasswordResetLinkEmail,
   sendTeacherWelcomeEmail,
 };

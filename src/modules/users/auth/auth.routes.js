@@ -7,7 +7,6 @@ const {
   login,
   getProfile,
   forgotPassword,
-  approveResetPassword,
   resetPassword,
 } = require('./auth.controller');
 
@@ -20,7 +19,6 @@ router.post('/signup', signup);
 router.post('/login', login);
 
 router.post('/forgot-password', forgotPassword);
-router.post('/forgot-password/approve', approveResetPassword);
 router.post('/reset-password', resetPassword);
 
 /**

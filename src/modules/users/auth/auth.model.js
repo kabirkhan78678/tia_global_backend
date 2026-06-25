@@ -10,10 +10,11 @@ exports.createParent = async (data) => {
         last_name,
         phone,
         email,
-        password
+        password,
+        approval_status
       )
       VALUES
-      (?,?,?,?,?,?)
+      (?,?,?,?,?,?,?)
       `,
     [
       'parent',
@@ -22,6 +23,7 @@ exports.createParent = async (data) => {
       data.phone,
       data.email,
       data.password,
+      'pending',
     ]
   );
 
@@ -81,10 +83,11 @@ exports.createTeacherUser = async (data) => {
         last_name,
         phone,
         email,
-        password
+        password,
+        approval_status
       )
       VALUES
-      (?,?,?,?,?,?)
+      (?,?,?,?,?,?,?)
       `,
     [
       'teacher',
@@ -93,6 +96,7 @@ exports.createTeacherUser = async (data) => {
       data.phone,
       data.email,
       data.password,
+      'pending',
     ]
   );
 
@@ -126,7 +130,7 @@ exports.createTeacherProfile = async (data) => {
 exports.findByEmail = async (email) => {
   const [users] = await pool.execute(
     `
-      SELECT id, role, email, password
+      SELECT id, role, email, password, approval_status
       FROM users
       WHERE email = ?
       LIMIT 1
@@ -170,22 +174,6 @@ exports.findPasswordResetRequestByToken = async (token) => {
   return rows[0] || null;
 };
 
-exports.approvePasswordResetRequest = async (token) => {
-  const [result] = await pool.execute(
-    `
-      UPDATE password_reset_requests
-      SET status = 'approved',
-          approved_at = CURRENT_TIMESTAMP
-      WHERE token = ?
-        AND status = 'pending'
-        AND expires_at > CURRENT_TIMESTAMP
-      `,
-    [token]
-  );
-
-  return result.affectedRows;
-};
-
 exports.updateUserPassword = async ({ userId, password }) => {
   await pool.execute(
     `
@@ -212,7 +200,7 @@ exports.markPasswordResetRequestUsed = async (token) => {
 exports.findById = async (id) => {
   const [rows] = await pool.execute(
     `
-      SELECT id, role, first_name, last_name, phone, email, created_at
+      SELECT id, role, first_name, last_name, phone, email, approval_status, created_at
       FROM users
       WHERE id = ?
       LIMIT 1
@@ -221,4 +209,44 @@ exports.findById = async (id) => {
   );
 
   return rows[0] || null;
+};
+
+exports.findTeacherProfileByUserId = async (userId) => {
+  const [rows] = await pool.execute(
+    `
+      SELECT
+        id,
+        qualification,
+        specialization,
+        experience_years,
+        teaching_grade
+      FROM teacher_profiles
+      WHERE user_id = ?
+      LIMIT 1
+      `,
+    [userId]
+  );
+
+  return rows[0] || null;
+};
+
+exports.findStudentsByParentId = async (parentId) => {
+  const [rows] = await pool.execute(
+    `
+      SELECT
+        s.id,
+        s.first_name,
+        s.last_name,
+        s.dob,
+        s.grade_level,
+        s.username
+      FROM parent_students ps
+      INNER JOIN students s ON s.id = ps.student_id
+      WHERE ps.parent_id = ?
+      ORDER BY s.grade_level ASC, s.first_name ASC, s.last_name ASC
+      `,
+    [parentId]
+  );
+
+  return rows;
 };

@@ -6,7 +6,6 @@ const AuthModel = require('./auth.model');
 const ApiError = require('../../../utils/apiError');
 const {
   sendParentWelcomeEmail,
-  sendPasswordResetApprovalEmail,
   sendPasswordResetLinkEmail,
   sendTeacherWelcomeEmail,
 } = require('../../../services/email.service');
@@ -34,24 +33,6 @@ const sendSignupEmail = async (sendEmail) => {
   } catch (error) {
     console.error('Signup email failed:', error.message);
   }
-};
-
-const getBearerToken = (headers) => {
-  const authHeader = headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    throw new ApiError(401, 'Bearer token is required');
-  }
-
-  return authHeader.split(' ')[1];
-};
-
-const getAdminApprovalSecret = () => {
-  if (!process.env.ADMIN_RESET_APPROVAL_SECRET) {
-    throw new ApiError(500, 'ADMIN_RESET_APPROVAL_SECRET is missing in .env');
-  }
-
-  return process.env.ADMIN_RESET_APPROVAL_SECRET;
 };
 
 const signupParent = async (payload) => {
@@ -163,6 +144,15 @@ const login = async (payload) => {
     throw new ApiError(400, 'Invalid credentials');
   }
 
+  if (user.approval_status !== 'approved') {
+    throw new ApiError(
+      403,
+      user.approval_status === 'rejected'
+        ? 'Your account has been rejected by admin'
+        : 'Your account is pending admin approval'
+    );
+  }
+
   const token = jwt.sign(
     {
       id: user.id,
@@ -178,6 +168,56 @@ const login = async (payload) => {
   };
 };
 
+const formatUserProfile = (user) => ({
+  id: user.id,
+  role: user.role,
+  firstName: user.first_name,
+  lastName: user.last_name,
+  fullName: `${user.first_name || ''} ${user.last_name || ''}`.trim(),
+  phone: user.phone,
+  email: user.email,
+  approvalStatus: user.approval_status,
+  createdAt: user.created_at,
+});
+
+const formatTeacherProfile = (profile) => {
+  if (!profile) {
+    return null;
+  }
+
+  return {
+    id: profile.id,
+    qualification: profile.qualification,
+    specialization: profile.specialization,
+    experienceYears: profile.experience_years,
+    teachingGrade: profile.teaching_grade,
+  };
+};
+
+const formatStudentProfile = (student) => ({
+  id: student.id,
+  firstName: student.first_name,
+  lastName: student.last_name,
+  fullName: `${student.first_name || ''} ${student.last_name || ''}`.trim(),
+  dob: student.dob,
+  gradeLevel: student.grade_level,
+  username: student.username,
+});
+
+const buildStudentSummary = (students) => {
+  const gradeCounts = students.reduce((summary, student) => {
+    const grade = student.gradeLevel || 'Unassigned';
+    summary[grade] = (summary[grade] || 0) + 1;
+    return summary;
+  }, {});
+
+  return {
+    totalStudents: students.length,
+    hasMultipleStudents: students.length > 1,
+    gradeCounts,
+  };
+};
+
 const getProfile = async (userId) => {
   const user = await AuthModel.findById(userId);
 
@@ -185,7 +225,31 @@ const getProfile = async (userId) => {
     throw new ApiError(404, 'User not found');
   }
 
-  return user;
+  const profile = {
+    user: formatUserProfile(user),
+  };
+
+  if (user.role === 'teacher') {
+    const teacherProfile = await AuthModel.findTeacherProfileByUserId(user.id);
+
+    return {
+      ...profile,
+      teacherProfile: formatTeacherProfile(teacherProfile),
+    };
+  }
+
+  if (user.role === 'parent') {
+    const students = await AuthModel.findStudentsByParentId(user.id);
+    const formattedStudents = students.map(formatStudentProfile);
+
+    return {
+      ...profile,
+      students: formattedStudents,
+      studentSummary: buildStudentSummary(formattedStudents),
+    };
+  }
+
+  return profile;
 };
 
 const forgotPassword = async (payload) => {
@@ -196,7 +260,9 @@ const forgotPassword = async (payload) => {
   const user = await AuthModel.findByEmail(payload.email);
 
   if (!user) {
-    throw new ApiError(404, 'User not found');
+    return {
+      message: 'If this email exists, a reset link has been sent',
+    };
   }
 
   const token = crypto.randomBytes(32).toString('hex');
@@ -210,70 +276,24 @@ const forgotPassword = async (payload) => {
   });
 
   await sendSignupEmail(() =>
-    sendPasswordResetApprovalEmail({
-      userEmail: user.email,
+    sendPasswordResetLinkEmail({
+      to: user.email,
       token,
       expiresAt,
     })
   );
 
   return {
-    message: 'Password reset request sent to admin for approval',
+    message: 'If this email exists, a reset link has been sent',
   };
 };
 
-const approveResetPassword = async (payload, headers) => {
-  const adminToken = getBearerToken(headers);
-
-  if (adminToken !== getAdminApprovalSecret()) {
-    throw new ApiError(403, 'Invalid admin approval token');
-  }
-
-  if (!payload.token) {
-    throw new ApiError(400, 'Reset token is required');
+const resetPassword = async (payload) => {
+  if (!payload.token || !payload.password) {
+    throw new ApiError(400, 'Token and password are required');
   }
 
   const resetRequest = await AuthModel.findPasswordResetRequestByToken(payload.token);
-
-  if (!resetRequest) {
-    throw new ApiError(400, 'Reset request not found');
-  }
-
-  if (new Date(resetRequest.expires_at).getTime() <= Date.now()) {
-    throw new ApiError(400, 'Reset request has expired');
-  }
-
-  if (resetRequest.status !== 'pending') {
-    throw new ApiError(400, 'Reset request is already processed');
-  }
-
-  const affectedRows = await AuthModel.approvePasswordResetRequest(payload.token);
-
-  if (!affectedRows) {
-    throw new ApiError(400, 'Reset request not found, expired, or already processed');
-  }
-
-  await sendSignupEmail(() =>
-    sendPasswordResetLinkEmail({
-      to: resetRequest.email,
-      token: payload.token,
-      expiresAt: resetRequest.expires_at,
-    })
-  );
-
-  return {
-    message: 'Password reset request approved and reset link sent to user',
-  };
-};
-
-const resetPassword = async (payload, headers) => {
-  const token = getBearerToken(headers);
-
-  if (!payload.password) {
-    throw new ApiError(400, 'Password is required');
-  }
-
-  const resetRequest = await AuthModel.findPasswordResetRequestByToken(token);
 
   if (!resetRequest) {
     throw new ApiError(400, 'Invalid reset token');
@@ -283,11 +303,7 @@ const resetPassword = async (payload, headers) => {
     throw new ApiError(400, 'Reset token has expired');
   }
 
-  if (resetRequest.status === 'pending') {
-    throw new ApiError(403, 'Admin has not approved this reset request yet');
-  }
-
-  if (resetRequest.status !== 'approved') {
+  if (resetRequest.status !== 'pending') {
     throw new ApiError(400, 'Reset token is already used or expired');
   }
 
@@ -297,7 +313,7 @@ const resetPassword = async (payload, headers) => {
     userId: resetRequest.user_id,
     password: hashedPassword,
   });
-  await AuthModel.markPasswordResetRequestUsed(token);
+  await AuthModel.markPasswordResetRequestUsed(payload.token);
 
   return {
     message: 'Password reset successfully',
@@ -309,6 +325,5 @@ module.exports = {
   login,
   getProfile,
   forgotPassword,
-  approveResetPassword,
   resetPassword,
 };

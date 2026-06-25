@@ -1,21 +1,8 @@
-const authService = require('./auth.service');
-
-const signup = async (req, res, next) => {
-  try {
-    const data = await authService.signup(req.body);
-
-    return res.status(201).json({
-      success: true,
-      data,
-    });
-  } catch (error) {
-    return next(error);
-  }
-};
+const adminAuthService = require('./admin.auth.service');
 
 const login = async (req, res, next) => {
   try {
-    const data = await authService.login(req.body);
+    const data = await adminAuthService.login(req.body);
 
     return res.status(200).json({
       success: true,
@@ -28,7 +15,7 @@ const login = async (req, res, next) => {
 
 const getProfile = async (req, res, next) => {
   try {
-    const data = await authService.getProfile(req.user.id);
+    const data = await adminAuthService.getProfile(req.admin.id);
 
     return res.status(200).json({
       success: true,
@@ -41,7 +28,7 @@ const getProfile = async (req, res, next) => {
 
 const forgotPassword = async (req, res, next) => {
   try {
-    const data = await authService.forgotPassword(req.body);
+    const data = await adminAuthService.forgotPassword(req.body);
 
     return res.status(200).json({
       success: true,
@@ -54,7 +41,7 @@ const forgotPassword = async (req, res, next) => {
 
 const resetPassword = async (req, res, next) => {
   try {
-    const data = await authService.resetPassword(req.body);
+    const data = await adminAuthService.resetPassword(req.body);
 
     return res.status(200).json({
       success: true,
@@ -66,9 +53,8 @@ const resetPassword = async (req, res, next) => {
 };
 
 module.exports = {
-  signup,
-  login,
-  getProfile,
   forgotPassword,
+  getProfile,
+  login,
   resetPassword,
 };
