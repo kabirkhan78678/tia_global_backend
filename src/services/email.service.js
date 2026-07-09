@@ -43,38 +43,84 @@ const sendParentWelcomeEmail = async ({ to, firstName, students = [] }) => {
     .map((student) => `${student.firstName || ''} ${student.lastName || ''}`.trim())
     .filter(Boolean);
 
-  const studentLine = studentNames.length
-    ? `Student(s): ${studentNames.join(', ')}`
-    : 'Your student profile';
+  const studentLines = studentNames.length
+    ? studentNames.map((name) => `- ${name}`).join('\n')
+    : '- Student profile';
+
+  const studentItems = studentNames.length
+    ? studentNames.map((name) => `<li>${name}</li>`).join('')
+    : '<li>Student profile</li>';
 
   await sendEmail({
     to,
-    subject: 'Welcome to TIA Global - Registration Under Review',
-    text: `Hi ${firstName || 'Parent'},
+    subject: 'Registration Received',
+    text: `Hello ${firstName || 'Parent'},
 
-Welcome to TIA Global.
+Thank you for registering.
 
-We have received your registration successfully. ${studentLine} is currently under admin review.
+Your account is pending admin approval.
 
-What happens next:
-1. Our admin team will review the submitted details.
-2. After approval, your student account will be activated.
-3. You will receive the next steps and login details once the review is completed.
-
-Thank you for choosing TIA Global.
+Students added:
+${studentLines}
 
 Team TIA Global`,
     html: `
-      <p>Hi ${firstName || 'Parent'},</p>
-      <p>Welcome to <strong>TIA Global</strong>.</p>
-      <p>We have received your registration successfully. <strong>${studentLine}</strong> is currently under admin review.</p>
-      <p><strong>What happens next:</strong></p>
-      <ol>
-        <li>Our admin team will review the submitted details.</li>
-        <li>After approval, your student account will be activated.</li>
-        <li>You will receive the next steps and login details once the review is completed.</li>
-      </ol>
-      <p>Thank you for choosing TIA Global.</p>
+      <p>Hello ${firstName || 'Parent'},</p>
+      <p>Thank you for registering.</p>
+      <p>Your account is pending admin approval.</p>
+      <p>Students added:</p>
+      <ul>${studentItems}</ul>
+      <p>Team TIA Global</p>
+    `,
+  });
+};
+
+const sendStudentRegistrationReceivedEmail = async ({ to, firstName }) => {
+  await sendEmail({
+    to,
+    subject: 'Registration Received',
+    text: `Hello ${firstName || 'Student'},
+
+Your account has been registered.
+
+It is currently pending admin approval.
+
+Once approved, you'll receive login credentials.
+
+Team TIA Global`,
+    html: `
+      <p>Hello ${firstName || 'Student'},</p>
+      <p>Your account has been registered.</p>
+      <p>It is currently pending admin approval.</p>
+      <p>Once approved, you'll receive login credentials.</p>
+      <p>Team TIA Global</p>
+    `,
+  });
+};
+
+const sendStudentApprovedEmail = async ({ to, password }) => {
+  await sendEmail({
+    to,
+    subject: 'Student Account Approved',
+    text: `Hello,
+
+Your account has been approved.
+
+Login Email:
+${to}
+
+Temporary Password:
+${password}
+
+Please change your password after first login.
+
+Team TIA Global`,
+    html: `
+      <p>Hello,</p>
+      <p>Your account has been approved.</p>
+      <p>Login Email:<br>${to}</p>
+      <p>Temporary Password:<br>${password}</p>
+      <p>Please change your password after first login.</p>
       <p>Team TIA Global</p>
     `,
   });
@@ -182,5 +228,7 @@ module.exports = {
   sendAdminPasswordResetLinkEmail,
   sendParentWelcomeEmail,
   sendPasswordResetLinkEmail,
+  sendStudentApprovedEmail,
+  sendStudentRegistrationReceivedEmail,
   sendTeacherWelcomeEmail,
 };

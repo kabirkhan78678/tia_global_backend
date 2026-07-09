@@ -43,8 +43,42 @@ const updateApprovalStatus = async (req, res, next) => {
   }
 };
 
+const updateParentStatus = async (req, res, next) => {
+  try {
+    const data = await adminUsersService.updateParentStatus({
+      parentId: Number(req.params.id),
+      status: req.body.status,
+    });
+
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const updateStudentStatus = async (req, res, next) => {
+  try {
+    const data = await adminUsersService.updateStudentStatus({
+      studentId: Number(req.params.id),
+      status: req.body.status,
+    });
+
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 module.exports = {
   getParents,
   getTeachers,
   updateApprovalStatus,
+  updateParentStatus,
+  updateStudentStatus,
 };

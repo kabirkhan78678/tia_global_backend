@@ -1,8 +1,23 @@
+const bcrypt = require('bcrypt');
+const crypto = require('crypto');
+
 const ApiError = require('../../../utils/apiError');
 const AdminUsersModel = require('./admin.users.model');
+const { sendStudentApprovedEmail } = require('../../../services/email.service');
 
 const ALLOWED_ROLES = ['parent', 'teacher'];
-const ALLOWED_APPROVAL_STATUSES = ['pending', 'approved', 'rejected'];
+const ALLOWED_APPROVAL_STATUSES = ['pending', 'active', 'inactive'];
+
+const generateTemporaryPassword = () =>
+  crypto.randomBytes(9).toString('base64').replace(/[+/=]/g, '').slice(0, 10);
+
+const sendAdminEmail = async (sendEmail) => {
+  try {
+    await sendEmail();
+  } catch (error) {
+    console.error('Admin user email failed:', error.message);
+  }
+};
 
 const formatTeacher = (teacher) => ({
   id: teacher.id,
@@ -29,7 +44,11 @@ const formatStudent = (student) => ({
   fullName: `${student.student_first_name || ''} ${student.student_last_name || ''}`.trim(),
   dob: student.dob,
   gradeLevel: student.grade_level,
-  username: student.username,
+  email: student.student_email,
+  status: student.student_status,
+  isFirstLogin: Boolean(student.is_first_login),
+  firstLoginAt: student.first_login_at,
+  isPasswordGenerated: Boolean(student.is_password_generated),
 });
 
 const groupParentsWithStudents = (rows) => {
@@ -106,8 +125,81 @@ const updateApprovalStatus = async ({ userId, role, status }) => {
   };
 };
 
+const updateParentStatus = async ({ parentId, status }) => {
+  if (!ALLOWED_APPROVAL_STATUSES.includes(status)) {
+    throw new ApiError(
+      400,
+      `status must be one of: ${ALLOWED_APPROVAL_STATUSES.join(', ')}`
+    );
+  }
+
+  const parent = await AdminUsersModel.findUserByIdAndRole({
+    userId: parentId,
+    role: 'parent',
+  });
+
+  if (!parent) {
+    throw new ApiError(404, 'Parent not found');
+  }
+
+  await AdminUsersModel.updateApprovalStatus({
+    userId: parentId,
+    role: 'parent',
+    status,
+  });
+
+  return {
+    message: `parent ${status} successfully`,
+  };
+};
+
+const updateStudentStatus = async ({ studentId, status }) => {
+  if (!ALLOWED_APPROVAL_STATUSES.includes(status)) {
+    throw new ApiError(
+      400,
+      `status must be one of: ${ALLOWED_APPROVAL_STATUSES.join(', ')}`
+    );
+  }
+
+  const student = await AdminUsersModel.findStudentById(studentId);
+
+  if (!student) {
+    throw new ApiError(404, 'Student not found');
+  }
+
+  if (status === 'active' && (student.status !== 'active' || !student.password)) {
+    const temporaryPassword = generateTemporaryPassword();
+    const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
+
+    await AdminUsersModel.updateStudentApproval({
+      studentId,
+      status,
+      password: hashedPassword,
+    });
+
+    await sendAdminEmail(() =>
+      sendStudentApprovedEmail({
+        to: student.email,
+        password: temporaryPassword,
+      })
+    );
+
+    return {
+      message: 'student active successfully',
+    };
+  }
+
+  await AdminUsersModel.updateStudentStatus({ studentId, status });
+
+  return {
+    message: `student ${status} successfully`,
+  };
+};
+
 module.exports = {
   getParents,
   getTeachers,
   updateApprovalStatus,
+  updateParentStatus,
+  updateStudentStatus,
 };

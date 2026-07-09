@@ -39,19 +39,21 @@ exports.createStudent = async (student) => {
         last_name,
         dob,
         grade_level,
-        username,
-        password
+        email,
+        password,
+        status
       )
       VALUES
-      (?,?,?,?,?,?)
+      (?,?,?,?,?,?,?)
       `,
     [
       student.firstName,
       student.lastName,
       student.dob,
       student.gradeLevel,
-      student.username,
+      student.email,
       student.password,
+      'pending',
     ]
   );
 
@@ -141,6 +143,48 @@ exports.findByEmail = async (email) => {
   return users[0] || null;
 };
 
+exports.findStudentByEmail = async (email) => {
+  const [students] = await pool.execute(
+    `
+      SELECT
+        id,
+        first_name,
+        last_name,
+        dob,
+        grade_level,
+        email,
+        password,
+        status,
+        profile_image,
+        is_first_login,
+        first_login_at,
+        is_password_generated
+      FROM students
+      WHERE email = ?
+      LIMIT 1
+      `,
+    [email]
+  );
+
+  return students[0] || null;
+};
+
+exports.findActiveParentByStudentId = async (studentId) => {
+  const [rows] = await pool.execute(
+    `
+      SELECT u.id, u.approval_status
+      FROM parent_students ps
+      INNER JOIN users u ON u.id = ps.parent_id
+      WHERE ps.student_id = ?
+        AND u.role = 'parent'
+      LIMIT 1
+      `,
+    [studentId]
+  );
+
+  return rows[0] || null;
+};
+
 exports.createPasswordResetRequest = async ({ userId, email, token, expiresAt }) => {
   const [result] = await pool.execute(
     `
@@ -185,6 +229,42 @@ exports.updateUserPassword = async ({ userId, password }) => {
   );
 };
 
+exports.updateStudentPassword = async ({ studentId, password }) => {
+  await pool.execute(
+    `
+      UPDATE students
+      SET password = ?
+      WHERE id = ?
+      `,
+    [password, studentId]
+  );
+};
+
+exports.createStudentPassword = async ({ studentId, password }) => {
+  await pool.execute(
+    `
+      UPDATE students
+      SET password = ?,
+          is_password_generated = 1
+      WHERE id = ?
+      `,
+    [password, studentId]
+  );
+};
+
+exports.markStudentFirstLogin = async (studentId) => {
+  await pool.execute(
+    `
+      UPDATE students
+      SET is_first_login = 0,
+          first_login_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+        AND is_first_login = 1
+      `,
+    [studentId]
+  );
+};
+
 exports.markPasswordResetRequestUsed = async (token) => {
   await pool.execute(
     `
@@ -200,8 +280,44 @@ exports.markPasswordResetRequestUsed = async (token) => {
 exports.findById = async (id) => {
   const [rows] = await pool.execute(
     `
-      SELECT id, role, first_name, last_name, phone, email, approval_status, created_at
+      SELECT
+        id,
+        role,
+        first_name,
+        last_name,
+        phone,
+        email,
+        password,
+        profile_image,
+        approval_status,
+        created_at
       FROM users
+      WHERE id = ?
+      LIMIT 1
+      `,
+    [id]
+  );
+
+  return rows[0] || null;
+};
+
+exports.findStudentById = async (id) => {
+  const [rows] = await pool.execute(
+    `
+      SELECT
+        id,
+        first_name,
+        last_name,
+        dob,
+        grade_level,
+        email,
+        password,
+        status,
+        profile_image,
+        is_first_login,
+        first_login_at,
+        is_password_generated
+      FROM students
       WHERE id = ?
       LIMIT 1
       `,
@@ -239,7 +355,12 @@ exports.findStudentsByParentId = async (parentId) => {
         s.last_name,
         s.dob,
         s.grade_level,
-        s.username
+        s.email,
+        s.status,
+        s.profile_image,
+        s.is_first_login,
+        s.first_login_at,
+        s.is_password_generated
       FROM parent_students ps
       INNER JOIN students s ON s.id = ps.student_id
       WHERE ps.parent_id = ?
@@ -249,4 +370,135 @@ exports.findStudentsByParentId = async (parentId) => {
   );
 
   return rows;
+};
+
+exports.updateUserProfile = async ({ userId, data }) => {
+  const fields = [];
+  const values = [];
+
+  if (data.firstName !== undefined) {
+    fields.push('first_name = ?');
+    values.push(data.firstName);
+  }
+
+  if (data.lastName !== undefined) {
+    fields.push('last_name = ?');
+    values.push(data.lastName);
+  }
+
+  if (data.phone !== undefined) {
+    fields.push('phone = ?');
+    values.push(data.phone);
+  }
+
+  if (data.profileImage !== undefined) {
+    fields.push('profile_image = ?');
+    values.push(data.profileImage);
+  }
+
+  if (!fields.length) {
+    return 0;
+  }
+
+  values.push(userId);
+
+  const [result] = await pool.execute(
+    `
+      UPDATE users
+      SET ${fields.join(', ')}
+      WHERE id = ?
+      `,
+    values
+  );
+
+  return result.affectedRows;
+};
+
+exports.updateTeacherProfile = async ({ userId, data }) => {
+  const fields = [];
+  const values = [];
+
+  if (data.qualification !== undefined) {
+    fields.push('qualification = ?');
+    values.push(data.qualification);
+  }
+
+  if (data.specialization !== undefined) {
+    fields.push('specialization = ?');
+    values.push(data.specialization);
+  }
+
+  if (data.experienceYears !== undefined) {
+    fields.push('experience_years = ?');
+    values.push(data.experienceYears);
+  }
+
+  if (data.teachingGrade !== undefined) {
+    fields.push('teaching_grade = ?');
+    values.push(data.teachingGrade);
+  }
+
+  if (!fields.length) {
+    return 0;
+  }
+
+  values.push(userId);
+
+  const [result] = await pool.execute(
+    `
+      UPDATE teacher_profiles
+      SET ${fields.join(', ')}
+      WHERE user_id = ?
+      `,
+    values
+  );
+
+  return result.affectedRows;
+};
+
+exports.updateStudentProfile = async ({ studentId, data }) => {
+  const fields = [];
+  const values = [];
+
+  if (data.firstName !== undefined) {
+    fields.push('first_name = ?');
+    values.push(data.firstName);
+  }
+
+  if (data.lastName !== undefined) {
+    fields.push('last_name = ?');
+    values.push(data.lastName);
+  }
+
+  if (data.dob !== undefined) {
+    fields.push('dob = ?');
+    values.push(data.dob);
+  }
+
+  if (data.gradeLevel !== undefined) {
+    fields.push('grade_level = ?');
+    values.push(data.gradeLevel);
+  }
+
+  if (data.profileImage !== undefined) {
+    fields.push('profile_image = ?');
+    values.push(data.profileImage);
+  }
+
+  if (!fields.length) {
+    return 0;
+  }
+
+  values.push(studentId);
+
+  const [result] = await pool.execute(
+    `
+      UPDATE students
+      SET ${fields.join(', ')}
+      WHERE id = ?
+      `,
+    values
+  );
+
+  return result.affectedRows;
 };

@@ -43,7 +43,11 @@ exports.findAllParents = async () => {
         s.last_name AS student_last_name,
         s.dob,
         s.grade_level,
-        s.username
+        s.email AS student_email,
+        s.status AS student_status,
+        s.is_first_login,
+        s.first_login_at,
+        s.is_password_generated
       FROM users u
       LEFT JOIN parent_students ps ON ps.parent_id = u.id
       LEFT JOIN students s ON s.id = ps.student_id
@@ -53,6 +57,29 @@ exports.findAllParents = async () => {
   );
 
   return rows;
+};
+
+exports.findStudentById = async (studentId) => {
+  const [rows] = await pool.execute(
+    `
+      SELECT
+        id,
+        first_name,
+        last_name,
+        email,
+        password,
+        status,
+        is_first_login,
+        first_login_at,
+        is_password_generated
+      FROM students
+      WHERE id = ?
+      LIMIT 1
+      `,
+    [studentId]
+  );
+
+  return rows[0] || null;
 };
 
 exports.findUserByIdAndRole = async ({ userId, role }) => {
@@ -79,6 +106,34 @@ exports.updateApprovalStatus = async ({ userId, role, status }) => {
         AND role = ?
       `,
     [status, userId, role]
+  );
+
+  return result.affectedRows;
+};
+
+exports.updateStudentStatus = async ({ studentId, status }) => {
+  const [result] = await pool.execute(
+    `
+      UPDATE students
+      SET status = ?
+      WHERE id = ?
+      `,
+    [status, studentId]
+  );
+
+  return result.affectedRows;
+};
+
+exports.updateStudentApproval = async ({ studentId, status, password }) => {
+  const [result] = await pool.execute(
+    `
+      UPDATE students
+      SET status = ?,
+          password = ?,
+          is_password_generated = 1
+      WHERE id = ?
+      `,
+    [status, password, studentId]
   );
 
   return result.affectedRows;
