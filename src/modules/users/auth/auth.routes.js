@@ -7,6 +7,8 @@ const {
   login,
   getProfile,
   updateProfile,
+  addStudent,
+  updateStudentProfile,
   changePassword,
   changeStudentPassword,
   createStudentPassword,
@@ -31,8 +33,10 @@ router.post('/reset-password', resetPassword);
  */
 router.get('/profile', verifyToken, getProfile);
 router.patch('/profile', verifyToken, uploadProfileImage.single('profileImage'), updateProfile);
+router.post('/students', verifyToken, uploadProfileImage.single('profileImage'), addStudent);
 router.patch('/change-password', verifyToken, changePassword);
 router.patch('/students/create-password', verifyToken, createStudentPassword);
 router.patch('/students/change-password', verifyToken, changeStudentPassword);
+router.patch('/students/:studentId', verifyToken, uploadProfileImage.single('profileImage'), updateStudentProfile);
 
 module.exports = router;

@@ -20,6 +20,8 @@ const ALLOWED_GRADES = [
   '4th Grade',
 ];
 
+const ALLOWED_ACADEMIES = ['Global Academy', 'Religious Academy'];
+
 const getJwtSecret = () => {
   if (!process.env.JWT_SECRET) {
     throw new ApiError(500, 'JWT_SECRET is missing in .env');
@@ -36,15 +38,71 @@ const sendSignupEmail = async (sendEmail) => {
   }
 };
 
+const validateStudentGrade = (gradeLevel, fieldName = 'gradeLevel') => {
+  if (gradeLevel && !ALLOWED_GRADES.includes(gradeLevel)) {
+    throw new ApiError(
+      400,
+      `${fieldName} must be one of: ${ALLOWED_GRADES.join(', ')}`
+    );
+  }
+};
+
+const validateStudentAcademy = (academy, fieldName = 'academy') => {
+  if (academy && !ALLOWED_ACADEMIES.includes(academy)) {
+    throw new ApiError(
+      400,
+      `${fieldName} must be one of: ${ALLOWED_ACADEMIES.join(', ')}`
+    );
+  }
+};
+
+const assertStudentEmailIsAvailable = async ({ email, currentStudentId, parentEmail }) => {
+  if (!email) {
+    return;
+  }
+
+  const normalizedEmail = String(email).toLowerCase();
+
+  if (normalizedEmail === String(parentEmail || '').toLowerCase()) {
+    throw new ApiError(400, 'Student email must be different from parent email');
+  }
+
+  const existingUser = await AuthModel.findByEmail(email);
+
+  if (existingUser) {
+    throw new ApiError(400, 'Student email is already registered');
+  }
+
+  const existingStudent = await AuthModel.findStudentByEmail(email);
+
+  if (existingStudent && existingStudent.id !== currentStudentId) {
+    throw new ApiError(400, 'Student email is already registered');
+  }
+};
+
+const ensureParent = async (authUser) => {
+  if (authUser.role !== 'parent') {
+    throw new ApiError(403, 'Only parents can manage child profiles');
+  }
+
+  const parent = await AuthModel.findById(authUser.id);
+
+  if (!parent || parent.role !== 'parent') {
+    throw new ApiError(404, 'Parent not found');
+  }
+
+  return parent;
+};
+
 const signupParent = async (payload) => {
   const studentEmails = new Set();
 
   for (const student of payload.students || []) {
-    if (!ALLOWED_GRADES.includes(student.gradeLevel)) {
-      throw new ApiError(
-        400,
-        `students.gradeLevel must be one of: ${ALLOWED_GRADES.join(', ')}`
-      );
+    validateStudentGrade(student.gradeLevel, 'students.gradeLevel');
+    validateStudentAcademy(student.academy, 'students.academy');
+
+    if (!student.academy) {
+      throw new ApiError(400, 'students.academy is required');
     }
 
     if (!student.email) {
@@ -277,6 +335,7 @@ const formatStudentProfile = (student) => ({
   fullName: `${student.first_name || ''} ${student.last_name || ''}`.trim(),
   dob: student.dob,
   gradeLevel: student.grade_level,
+  academy: student.academy,
   email: student.email,
   status: student.status,
   profileImage: student.profile_image,
@@ -357,12 +416,8 @@ const updateProfile = async ({ authUser, body, file }) => {
   const profileImage = getProfileImagePath(file);
 
   if (authUser.role === 'student') {
-    if (body.gradeLevel && !ALLOWED_GRADES.includes(body.gradeLevel)) {
-      throw new ApiError(
-        400,
-        `gradeLevel must be one of: ${ALLOWED_GRADES.join(', ')}`
-      );
-    }
+    validateStudentGrade(body.gradeLevel);
+    validateStudentAcademy(body.academy);
 
     const student = await AuthModel.findStudentById(authUser.id);
 
@@ -377,6 +432,7 @@ const updateProfile = async ({ authUser, body, file }) => {
         lastName: body.lastName,
         dob: body.dob,
         gradeLevel: body.gradeLevel,
+        academy: body.academy,
         profileImage,
       },
     });
@@ -420,6 +476,115 @@ const updateProfile = async ({ authUser, body, file }) => {
   }
 
   return getProfile(authUser);
+};
+
+const addParentStudent = async ({ authUser, body, file }) => {
+  const parent = await ensureParent(authUser);
+
+  if (!body.firstName || !body.lastName || !body.gradeLevel || !body.academy || !body.email) {
+    throw new ApiError(400, 'firstName, lastName, gradeLevel, academy and email are required');
+  }
+
+  validateStudentGrade(body.gradeLevel);
+  validateStudentAcademy(body.academy);
+  await assertStudentEmailIsAvailable({
+    email: body.email,
+    parentEmail: parent.email,
+  });
+
+  const studentId = await AuthModel.createStudent({
+    firstName: body.firstName,
+    lastName: body.lastName,
+    dob: body.dob,
+    gradeLevel: body.gradeLevel,
+    academy: body.academy,
+    email: body.email,
+    password: null,
+  });
+
+  await AuthModel.linkStudent(parent.id, studentId);
+
+  const profileImage = getProfileImagePath(file);
+
+  if (profileImage !== undefined) {
+    await AuthModel.updateStudentProfile({
+      studentId,
+      data: { profileImage },
+    });
+  }
+
+  await sendSignupEmail(() =>
+    sendStudentRegistrationReceivedEmail({
+      to: body.email,
+      firstName: body.firstName,
+    })
+  );
+
+  const student = await AuthModel.findStudentByParentIdAndStudentId({
+    parentId: parent.id,
+    studentId,
+  });
+
+  return {
+    message: 'Student added successfully',
+    student: formatStudentProfile(student),
+  };
+};
+
+const updateParentStudentProfile = async ({ authUser, studentId, body, file }) => {
+  const parent = await ensureParent(authUser);
+  const numericStudentId = Number(studentId);
+
+  if (!Number.isInteger(numericStudentId) || numericStudentId <= 0) {
+    throw new ApiError(400, 'Valid student id is required');
+  }
+
+  const student = await AuthModel.findStudentByParentIdAndStudentId({
+    parentId: parent.id,
+    studentId: numericStudentId,
+  });
+
+  if (!student) {
+    throw new ApiError(404, 'Student not found for this parent');
+  }
+
+  validateStudentGrade(body.gradeLevel);
+  validateStudentAcademy(body.academy);
+
+  if (body.email !== undefined) {
+    if (!body.email) {
+      throw new ApiError(400, 'email cannot be empty');
+    }
+
+    await assertStudentEmailIsAvailable({
+      email: body.email,
+      currentStudentId: numericStudentId,
+      parentEmail: parent.email,
+    });
+  }
+
+  await AuthModel.updateStudentProfile({
+    studentId: numericStudentId,
+    data: {
+      firstName: body.firstName,
+      lastName: body.lastName,
+      dob: body.dob,
+      gradeLevel: body.gradeLevel,
+      academy: body.academy,
+      email: body.email,
+      profileImage: getProfileImagePath(file),
+    },
+  });
+
+  const updatedStudent = await AuthModel.findStudentByParentIdAndStudentId({
+    parentId: parent.id,
+    studentId: numericStudentId,
+  });
+
+  return {
+    message: 'Student profile updated successfully',
+    student: formatStudentProfile(updatedStudent),
+  };
 };
 
 const changePassword = async ({ authUser, oldPassword, newPassword }) => {
@@ -592,6 +757,8 @@ module.exports = {
   login,
   getProfile,
   updateProfile,
+  addParentStudent,
+  updateParentStudentProfile,
   changePassword,
   changeStudentPassword,
   createStudentPassword,

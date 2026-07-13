@@ -39,18 +39,20 @@ exports.createStudent = async (student) => {
         last_name,
         dob,
         grade_level,
+        academy,
         email,
         password,
         status
       )
       VALUES
-      (?,?,?,?,?,?,?)
+      (?,?,?,?,?,?,?,?)
       `,
     [
       student.firstName,
       student.lastName,
       student.dob,
       student.gradeLevel,
+      student.academy,
       student.email,
       student.password,
       'pending',
@@ -152,6 +154,7 @@ exports.findStudentByEmail = async (email) => {
         last_name,
         dob,
         grade_level,
+        academy,
         email,
         password,
         status,
@@ -310,6 +313,7 @@ exports.findStudentById = async (id) => {
         last_name,
         dob,
         grade_level,
+        academy,
         email,
         password,
         status,
@@ -355,6 +359,7 @@ exports.findStudentsByParentId = async (parentId) => {
         s.last_name,
         s.dob,
         s.grade_level,
+        s.academy,
         s.email,
         s.status,
         s.profile_image,
@@ -370,6 +375,34 @@ exports.findStudentsByParentId = async (parentId) => {
   );
 
   return rows;
+};
+
+exports.findStudentByParentIdAndStudentId = async ({ parentId, studentId }) => {
+  const [rows] = await pool.execute(
+    `
+      SELECT
+        s.id,
+        s.first_name,
+        s.last_name,
+        s.dob,
+        s.grade_level,
+        s.academy,
+        s.email,
+        s.status,
+        s.profile_image,
+        s.is_first_login,
+        s.first_login_at,
+        s.is_password_generated
+      FROM parent_students ps
+      INNER JOIN students s ON s.id = ps.student_id
+      WHERE ps.parent_id = ?
+        AND ps.student_id = ?
+      LIMIT 1
+      `,
+    [parentId, studentId]
+  );
+
+  return rows[0] || null;
 };
 
 exports.updateUserProfile = async ({ userId, data }) => {
@@ -478,6 +511,16 @@ exports.updateStudentProfile = async ({ studentId, data }) => {
   if (data.gradeLevel !== undefined) {
     fields.push('grade_level = ?');
     values.push(data.gradeLevel);
+  }
+
+  if (data.academy !== undefined) {
+    fields.push('academy = ?');
+    values.push(data.academy);
+  }
+
+  if (data.email !== undefined) {
+    fields.push('email = ?');
+    values.push(data.email);
   }
 
   if (data.profileImage !== undefined) {

@@ -13,7 +13,13 @@ const app = express();
    Security & Middlewares
 ========================================== */
 
-app.use(helmet());
+app.use(
+   helmet({
+      crossOriginResourcePolicy: {
+         policy: "cross-origin",
+      },
+   })
+);
 app.use(cors());
 
 app.use(express.json());
@@ -26,19 +32,19 @@ app.use(express.static(path.join(__dirname, "../public")));
 ========================================== */
 
 app.get("/", (req, res) => {
-  res.status(200).json({
-    success: true,
-    application: "TIA Global API",
-    version: "1.0.0",
-    status: "Running",
-    environment: process.env.NODE_ENV || "development",
-    timestamp: new Date().toISOString(),
-    message: "Welcome to the TIA Global Backend API.",
-    endpoints: {
-      health: "/health",
-      api: "/api"
-    }
-  });
+   res.status(200).json({
+      success: true,
+      application: "TIA Global API",
+      version: "1.0.0",
+      status: "Running",
+      environment: process.env.NODE_ENV || "development",
+      timestamp: new Date().toISOString(),
+      message: "Welcome to the TIA Global Backend API.",
+      endpoints: {
+         health: "/health",
+         api: "/api"
+      }
+   });
 });
 
 /* ==========================================
@@ -46,13 +52,13 @@ app.get("/", (req, res) => {
 ========================================== */
 
 app.get("/health", (req, res) => {
-  res.status(200).json({
-    success: true,
-    application: "TIA Global API",
-    status: "Healthy",
-    uptime: `${Math.floor(process.uptime())} seconds`,
-    timestamp: new Date().toISOString()
-  });
+   res.status(200).json({
+      success: true,
+      application: "TIA Global API",
+      status: "Healthy",
+      uptime: `${Math.floor(process.uptime())} seconds`,
+      timestamp: new Date().toISOString()
+   });
 });
 
 /* ==========================================
@@ -60,7 +66,7 @@ app.get("/health", (req, res) => {
 ========================================== */
 
 app.get("/reset-password", (req, res) => {
-  res.sendFile(path.join(__dirname, "../public/reset-password.html"));
+   res.sendFile(path.join(__dirname, "../public/reset-password.html"));
 });
 
 /* ==========================================

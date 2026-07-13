@@ -47,6 +47,68 @@ exports.findById = async (id) => {
   return admins[0] || null;
 };
 
+exports.findByIdWithPassword = async (id) => {
+  const [admins] = await pool.execute(
+    `
+      SELECT
+        id,
+        name,
+        email,
+        phone,
+        password,
+        profile_image,
+        status,
+        last_login_at,
+        created_at,
+        updated_at
+      FROM admins
+      WHERE id = ?
+      LIMIT 1
+      `,
+    [id]
+  );
+
+  return admins[0] || null;
+};
+
+exports.updateProfile = async ({ adminId, data }) => {
+  const fields = [];
+  const values = [];
+
+  if (data.name !== undefined) {
+    fields.push('name = ?');
+    values.push(data.name);
+  }
+
+  if (data.phone !== undefined) {
+    fields.push('phone = ?');
+    values.push(data.phone);
+  }
+
+  if (data.profileImage !== undefined) {
+    fields.push('profile_image = ?');
+    values.push(data.profileImage);
+  }
+
+  if (!fields.length) {
+    return 0;
+  }
+
+  values.push(adminId);
+
+  const [result] = await pool.execute(
+    `
+      UPDATE admins
+      SET ${fields.join(', ')},
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+      `,
+    values
+  );
+
+  return result.affectedRows;
+};
+
 exports.createPasswordResetRequest = async ({ adminId, email, token, expiresAt }) => {
   const [result] = await pool.execute(
     `

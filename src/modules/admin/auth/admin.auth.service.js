@@ -86,6 +86,66 @@ const getProfile = async (adminId) => {
   };
 };
 
+const getProfileImagePath = (file) => {
+  if (!file) {
+    return undefined;
+  }
+
+  return `/uploads/profiles/${file.filename}`;
+};
+
+const updateProfile = async ({ adminId, body, file }) => {
+  const admin = await AdminAuthModel.findById(adminId);
+
+  if (!admin) {
+    throw new ApiError(404, 'Admin not found');
+  }
+
+  await AdminAuthModel.updateProfile({
+    adminId,
+    data: {
+      name: body.name,
+      phone: body.phone,
+      profileImage: getProfileImagePath(file),
+    },
+  });
+
+  return getProfile(adminId);
+};
+
+const changePassword = async ({ adminId, oldPassword, newPassword }) => {
+  if (!oldPassword || !newPassword) {
+    throw new ApiError(400, 'oldPassword and newPassword are required');
+  }
+
+  const admin = await AdminAuthModel.findByIdWithPassword(adminId);
+
+  if (!admin || !admin.password) {
+    throw new ApiError(404, 'Admin not found');
+  }
+
+  if (admin.status !== 'active') {
+    throw new ApiError(403, 'Admin account is inactive');
+  }
+
+  const match = await bcrypt.compare(oldPassword, admin.password);
+
+  if (!match) {
+    throw new ApiError(400, 'Old password is incorrect');
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+  await AdminAuthModel.updatePassword({
+    adminId,
+    password: hashedPassword,
+  });
+
+  return {
+    message: 'Admin password changed successfully',
+  };
+};
+
 const forgotPassword = async (payload) => {
   if (!payload.email) {
     throw new ApiError(400, 'Email is required');
@@ -155,8 +215,10 @@ const resetPassword = async (payload) => {
 };
 
 module.exports = {
+  changePassword,
   forgotPassword,
   getProfile,
   login,
   resetPassword,
+  updateProfile,
 };

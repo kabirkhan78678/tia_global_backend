@@ -26,6 +26,40 @@ const getProfile = async (req, res, next) => {
   }
 };
 
+const updateProfile = async (req, res, next) => {
+  try {
+    const data = await adminAuthService.updateProfile({
+      adminId: req.admin.id,
+      body: req.body,
+      file: req.file,
+    });
+
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const changePassword = async (req, res, next) => {
+  try {
+    const data = await adminAuthService.changePassword({
+      adminId: req.admin.id,
+      oldPassword: req.body.oldPassword,
+      newPassword: req.body.newPassword,
+    });
+
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 const forgotPassword = async (req, res, next) => {
   try {
     const data = await adminAuthService.forgotPassword(req.body);
@@ -53,8 +87,10 @@ const resetPassword = async (req, res, next) => {
 };
 
 module.exports = {
+  changePassword,
   forgotPassword,
   getProfile,
   login,
   resetPassword,
+  updateProfile,
 };

@@ -56,6 +56,41 @@ const updateProfile = async (req, res, next) => {
   }
 };
 
+const addStudent = async (req, res, next) => {
+  try {
+    const data = await authService.addParentStudent({
+      authUser: req.user,
+      body: req.body,
+      file: req.file,
+    });
+
+    return res.status(201).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const updateStudentProfile = async (req, res, next) => {
+  try {
+    const data = await authService.updateParentStudentProfile({
+      authUser: req.user,
+      studentId: req.params.studentId,
+      body: req.body,
+      file: req.file,
+    });
+
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 const changePassword = async (req, res, next) => {
   try {
     const data = await authService.changePassword({
@@ -139,6 +174,8 @@ module.exports = {
   login,
   getProfile,
   updateProfile,
+  addStudent,
+  updateStudentProfile,
   changePassword,
   changeStudentPassword,
   createStudentPassword,
