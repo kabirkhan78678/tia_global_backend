@@ -1,8 +1,10 @@
 const chalk = require('chalk');
+const http = require('http');
 const app = require('./src/app');
 const env = require('./src/config/env');
 const { testConnection } = require('./src/config/db');
 const { printRoutes } = require('./src/utils/routeLogger');
+const initializeSocket = require('./src/socket');
 
 const startServer = async () => {
   console.log(chalk.cyan.bold('\n🚀 Starting API...\n'));
@@ -12,7 +14,10 @@ const startServer = async () => {
     await testConnection();
     console.log(chalk.green('✅ Database connected successfully'));
 
-    app.listen(env.port, () => {
+    const httpServer = http.createServer(app);
+    initializeSocket(httpServer);
+
+    httpServer.listen(env.port, () => {
       console.log('\n' + '='.repeat(60));
       console.log(chalk.green.bold('🚀 SERVER STARTED SUCCESSFULLY'));
       console.log('='.repeat(60));

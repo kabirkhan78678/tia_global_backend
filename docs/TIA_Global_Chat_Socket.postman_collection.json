@@ -1,0 +1,463 @@
+{
+  "info": {
+    "_postman_id": "f05f2e41-2c0d-4d4a-9c69-tia-chat-socket",
+    "name": "TIA Global - Chat Socket.IO",
+    "description": "Import this collection in Postman. Use the Login folder to get JWT tokens. For Socket.IO testing, create a Socket.IO request in Postman with URL `{{socketUrl}}`, set Auth token as `Bearer {{token}}`, then copy event names and JSON payloads from this collection.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "socketUrl",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "parentEmail",
+      "value": "parent@example.com"
+    },
+    {
+      "key": "teacherEmail",
+      "value": "teacher@example.com"
+    },
+    {
+      "key": "studentEmail",
+      "value": "student@example.com"
+    },
+    {
+      "key": "password",
+      "value": "Password@123"
+    },
+    {
+      "key": "conversationId",
+      "value": "1"
+    },
+    {
+      "key": "teacherId",
+      "value": "1"
+    },
+    {
+      "key": "studentId",
+      "value": "1"
+    },
+    {
+      "key": "parentId",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "Login Helpers",
+      "item": [
+        {
+          "name": "Login Parent",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.data && json.data.token) {",
+                  "  pm.collectionVariables.set('token', json.data.token);",
+                  "}",
+                  "if (json && json.token) {",
+                  "  pm.collectionVariables.set('token', json.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{parentEmail}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login Teacher",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.data && json.data.token) {",
+                  "  pm.collectionVariables.set('token', json.data.token);",
+                  "}",
+                  "if (json && json.token) {",
+                  "  pm.collectionVariables.set('token', json.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{teacherEmail}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login Student",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.data && json.data.token) {",
+                  "  pm.collectionVariables.set('token', json.data.token);",
+                  "}",
+                  "if (json && json.token) {",
+                  "  pm.collectionVariables.set('token', json.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{studentEmail}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Socket.IO Setup",
+      "item": [
+        {
+          "name": "Postman Socket.IO Connection Notes",
+          "request": {
+            "method": "GET",
+            "description": "In Postman, create New > Socket.IO. URL: `{{socketUrl}}`. Auth token can be passed in Auth payload as `{ \"token\": \"Bearer {{token}}\" }`, or as header `Authorization: Bearer {{token}}`. Then emit the events listed in the Socket.IO Events folder.",
+            "url": {
+              "raw": "{{socketUrl}}",
+              "host": [
+                "{{socketUrl}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Socket.IO Events",
+      "item": [
+        {
+          "name": "chat:contacts",
+          "request": {
+            "method": "POST",
+            "description": "Socket.IO event name: `chat:contacts`\n\nPayload:\n```json\n{}\n```\n\nExpected: Parent/student receive `teachers`; teacher receives `parents` and `students`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{socketUrl}}",
+              "host": [
+                "{{socketUrl}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chat:list",
+          "request": {
+            "method": "POST",
+            "description": "Socket.IO event name: `chat:list`\n\nReturns conversations with last message and unread count.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"page\": 1,\n  \"limit\": 30\n}"
+            },
+            "url": {
+              "raw": "{{socketUrl}}",
+              "host": [
+                "{{socketUrl}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chat:conversation:create - Parent To Teacher",
+          "request": {
+            "method": "POST",
+            "description": "Socket.IO event name: `chat:conversation:create`\n\nParent token required. Teacher must teach at least one active child grade.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientRole\": \"teacher\",\n  \"recipientId\": {{teacherId}}\n}"
+            },
+            "url": {
+              "raw": "{{socketUrl}}",
+              "host": [
+                "{{socketUrl}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chat:conversation:create - Teacher To Parent",
+          "request": {
+            "method": "POST",
+            "description": "Socket.IO event name: `chat:conversation:create`\n\nTeacher token required.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientRole\": \"parent\",\n  \"recipientId\": {{parentId}}\n}"
+            },
+            "url": {
+              "raw": "{{socketUrl}}",
+              "host": [
+                "{{socketUrl}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chat:conversation:create - Student To Teacher",
+          "request": {
+            "method": "POST",
+            "description": "Socket.IO event name: `chat:conversation:create`\n\nStudent token required. Teacher grade must match student grade.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientRole\": \"teacher\",\n  \"recipientId\": {{teacherId}}\n}"
+            },
+            "url": {
+              "raw": "{{socketUrl}}",
+              "host": [
+                "{{socketUrl}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chat:conversation:create - Teacher To Student",
+          "request": {
+            "method": "POST",
+            "description": "Socket.IO event name: `chat:conversation:create`\n\nTeacher token required.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientRole\": \"student\",\n  \"recipientId\": {{studentId}}\n}"
+            },
+            "url": {
+              "raw": "{{socketUrl}}",
+              "host": [
+                "{{socketUrl}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chat:join",
+          "request": {
+            "method": "POST",
+            "description": "Socket.IO event name: `chat:join`\n\nJoins conversation room after access check.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conversationId\": {{conversationId}}\n}"
+            },
+            "url": {
+              "raw": "{{socketUrl}}",
+              "host": [
+                "{{socketUrl}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chat:messages",
+          "request": {
+            "method": "POST",
+            "description": "Socket.IO event name: `chat:messages`\n\nUse `beforeMessageId` for older messages.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conversationId\": {{conversationId}},\n  \"limit\": 30\n}"
+            },
+            "url": {
+              "raw": "{{socketUrl}}",
+              "host": [
+                "{{socketUrl}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chat:message:send - Existing Conversation",
+          "request": {
+            "method": "POST",
+            "description": "Socket.IO event name: `chat:message:send`\n\nSends message in existing conversation.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conversationId\": {{conversationId}},\n  \"body\": \"Hello, this is a test message from Postman.\"\n}"
+            },
+            "url": {
+              "raw": "{{socketUrl}}",
+              "host": [
+                "{{socketUrl}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chat:message:send - Create And Send",
+          "request": {
+            "method": "POST",
+            "description": "Socket.IO event name: `chat:message:send`\n\nCreates conversation if missing, then sends message.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientRole\": \"teacher\",\n  \"recipientId\": {{teacherId}},\n  \"body\": \"Hello teacher, this creates chat if needed.\"\n}"
+            },
+            "url": {
+              "raw": "{{socketUrl}}",
+              "host": [
+                "{{socketUrl}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "chat:read",
+          "request": {
+            "method": "POST",
+            "description": "Socket.IO event name: `chat:read`\n\nIf `messageId` is omitted, latest message is marked read.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conversationId\": {{conversationId}}\n}"
+            },
+            "url": {
+              "raw": "{{socketUrl}}",
+              "host": [
+                "{{socketUrl}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Realtime Listener Events",
+      "item": [
+        {
+          "name": "Listen: chat:message:new",
+          "request": {
+            "method": "GET",
+            "description": "Server event to listen in Postman Socket.IO client: `chat:message:new`.",
+            "url": {
+              "raw": "{{socketUrl}}",
+              "host": [
+                "{{socketUrl}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listen: chat:list:update",
+          "request": {
+            "method": "GET",
+            "description": "Server event to listen in Postman Socket.IO client: `chat:list:update`.",
+            "url": {
+              "raw": "{{socketUrl}}",
+              "host": [
+                "{{socketUrl}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listen: chat:read:update",
+          "request": {
+            "method": "GET",
+            "description": "Server event to listen in Postman Socket.IO client: `chat:read:update`.",
+            "url": {
+              "raw": "{{socketUrl}}",
+              "host": [
+                "{{socketUrl}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listen: chat:error",
+          "request": {
+            "method": "GET",
+            "description": "Server event to listen in Postman Socket.IO client: `chat:error`.",
+            "url": {
+              "raw": "{{socketUrl}}",
+              "host": [
+                "{{socketUrl}}"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
