@@ -1,0 +1,8 @@
+node_modules
+.env
+implementation.md
+# .gitignore
+package-lock.json
+# database
+public/uploads
+.DS_Store
