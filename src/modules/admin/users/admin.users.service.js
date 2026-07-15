@@ -104,6 +104,29 @@ const getParents = async () => {
   };
 };
 
+const activateParentChildren = async (parentId) => {
+  const students = await AdminUsersModel.findStudentsByParentId(parentId);
+  for (const student of students) {
+    if (student.status !== 'active' || !student.password) {
+      const temporaryPassword = generateTemporaryPassword();
+      const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
+
+      await AdminUsersModel.updateStudentApproval({
+        studentId: student.id,
+        status: 'active',
+        password: hashedPassword,
+      });
+
+      await sendAdminEmail(() =>
+        sendStudentApprovedEmail({
+          to: student.email,
+          password: temporaryPassword,
+        })
+      );
+    }
+  }
+};
+
 const updateApprovalStatus = async ({ userId, role, status }) => {
   if (!ALLOWED_ROLES.includes(role)) {
     throw new ApiError(400, `role must be one of: ${ALLOWED_ROLES.join(', ')}`);
@@ -123,6 +146,10 @@ const updateApprovalStatus = async ({ userId, role, status }) => {
   }
 
   await AdminUsersModel.updateApprovalStatus({ userId, role, status });
+
+  if (role === 'parent' && status === 'active') {
+    await activateParentChildren(userId);
+  }
 
   return {
     message: `${role} ${status} successfully`,
@@ -152,6 +179,10 @@ const updateParentStatus = async ({ parentId, status }) => {
     status,
   });
 
+  if (status === 'active') {
+    await activateParentChildren(parentId);
+  }
+
   return {
     message: `parent ${status} successfully`,
   };
@@ -171,22 +202,35 @@ const updateStudentStatus = async ({ studentId, status }) => {
     throw new ApiError(404, 'Student not found');
   }
 
-  if (status === 'active' && (student.status !== 'active' || !student.password)) {
-    const temporaryPassword = generateTemporaryPassword();
-    const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
+  if (status === 'active') {
+    if (student.status !== 'active' || !student.password) {
+      const temporaryPassword = generateTemporaryPassword();
+      const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
 
-    await AdminUsersModel.updateStudentApproval({
-      studentId,
-      status,
-      password: hashedPassword,
-    });
+      await AdminUsersModel.updateStudentApproval({
+        studentId,
+        status,
+        password: hashedPassword,
+      });
 
-    await sendAdminEmail(() =>
-      sendStudentApprovedEmail({
-        to: student.email,
-        password: temporaryPassword,
-      })
-    );
+      await sendAdminEmail(() =>
+        sendStudentApprovedEmail({
+          to: student.email,
+          password: temporaryPassword,
+        })
+      );
+    } else {
+      await AdminUsersModel.updateStudentStatus({ studentId, status });
+    }
+
+    const parent = await AdminUsersModel.findParentByStudentId(studentId);
+    if (parent && parent.approval_status !== 'active') {
+      await AdminUsersModel.updateApprovalStatus({
+        userId: parent.id,
+        role: 'parent',
+        status: 'active',
+      });
+    }
 
     return {
       message: 'student active successfully',

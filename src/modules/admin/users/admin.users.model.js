@@ -134,7 +134,7 @@ exports.updateStudentApproval = async ({ studentId, status, password }) => {
       UPDATE students
       SET status = ?,
           password = ?,
-          is_password_generated = 1
+          is_password_generated = 0
       WHERE id = ?
       `,
     [status, password, studentId]
@@ -142,3 +142,47 @@ exports.updateStudentApproval = async ({ studentId, status, password }) => {
 
   return result.affectedRows;
 };
+
+exports.findParentByStudentId = async (studentId) => {
+  const [rows] = await pool.execute(
+    `
+      SELECT u.id, u.role, u.first_name, u.last_name, u.phone, u.email, u.profile_image, u.approval_status, u.created_at
+      FROM parent_students ps
+      INNER JOIN users u ON u.id = ps.parent_id
+      WHERE ps.student_id = ?
+        AND u.role = 'parent'
+      LIMIT 1
+      `,
+    [studentId]
+  );
+
+  return rows[0] || null;
+};
+
+exports.findStudentsByParentId = async (parentId) => {
+  const [rows] = await pool.execute(
+    `
+      SELECT
+        s.id,
+        s.first_name,
+        s.last_name,
+        s.dob,
+        s.grade_level,
+        s.academy,
+        s.email,
+        s.status,
+        s.password,
+        s.profile_image,
+        s.is_first_login,
+        s.first_login_at,
+        s.is_password_generated
+      FROM parent_students ps
+      INNER JOIN students s ON s.id = ps.student_id
+      WHERE ps.parent_id = ?
+      `,
+    [parentId]
+  );
+
+  return rows;
+};
+

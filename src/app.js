@@ -14,12 +14,17 @@ const app = express();
 ========================================== */
 
 app.use(
-   helmet({
-      crossOriginResourcePolicy: {
-         policy: "cross-origin",
-      },
-   })
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginOpenerPolicy: false,
+    crossOriginEmbedderPolicy: false,
+    originAgentCluster: false,
+    crossOriginResourcePolicy: {
+      policy: "cross-origin",
+    },
+  })
 );
+
 app.use(cors());
 
 app.use(express.json());
