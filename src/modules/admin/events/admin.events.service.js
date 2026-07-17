@@ -18,20 +18,24 @@ const formatEvent = (event, grades = []) => ({
   description: event.description,
   eventDate: event.event_date,
   eventTime: event.event_time,
-  category: event.category,
+  categories: event.categories
+  ? event.categories.split(',')
+  : [],
   grades,
   createdAt: event.created_at,
   updatedAt: event.updated_at,
 });
 
 const createEvent = async ({
+
   title,
   description,
   eventDate,
   eventTime,
-  category,
+  categories,
   grades,
 }) => {
+  console.log("categories in service:", categories);
   if (!title?.trim()) {
     throw new ApiError(400, 'Title is required');
   }
@@ -40,14 +44,22 @@ const createEvent = async ({
     throw new ApiError(400, 'Event date is required');
   }
 
-  if (!ALLOWED_CATEGORIES.includes(category)) {
+if (!Array.isArray(categories) || categories.length === 0) {
+  throw new ApiError(400, "Please select at least one categories");
+}
+
+const invalidCategories = categories.filter(
+  (c) => !ALLOWED_CATEGORIES.includes(c)
+);
+
+  if (invalidCategories.length) {
     throw new ApiError(
       400,
-      `category must be one of: ${ALLOWED_CATEGORIES.join(', ')}`
+      `Invalid categories: ${invalidCategories.join(", ")}`
     );
   }
 
-  if (category === 'STUDENT') {
+  if (categories.includes("STUDENT")) {
     if (!Array.isArray(grades) || grades.length === 0) {
       throw new ApiError(
         400,
@@ -67,10 +79,10 @@ const createEvent = async ({
     description: description?.trim(),
     eventDate,
     eventTime,
-    category,
+    categories,
   });
 
-  if (category === 'STUDENT') {
+if (categories.includes('STUDENT')) {
     for (const grade of grades) {
       await AdminEventsModel.addStudentGrade({
         eventId,
@@ -92,7 +104,7 @@ const getEvents = async () => {
 
   for (const event of events) {
     const grades =
-      event.category === 'STUDENT'
+      event.categories?.split(',').includes('STUDENT')
         ? await AdminEventsModel.findGradesByEventId(event.id)
         : [];
 
@@ -117,7 +129,7 @@ const getEventById = async (eventId) => {
   }
 
   const grades =
-    event.category === 'STUDENT'
+    event.categories?.split(',').includes('STUDENT')
       ? await AdminEventsModel.findGradesByEventId(event.id)
       : [];
 
@@ -133,7 +145,7 @@ const updateEvent = async ({
   description,
   eventDate,
   eventTime,
-  category,
+  categories,
   grades,
 }) => {
   const event = await AdminEventsModel.findEventById(eventId);
@@ -142,11 +154,12 @@ const updateEvent = async ({
     throw new ApiError(404, 'Event not found');
   }
 
-  if (!ALLOWED_CATEGORIES.includes(category)) {
-    throw new ApiError(
-      400,
-      `category must be one of: ${ALLOWED_CATEGORIES.join(', ')}`
-    );
+  if (
+    categories &&
+    (!Array.isArray(categories) ||
+      categories.some(c => !ALLOWED_CATEGORIES.includes(c)))
+  ) {
+    throw new ApiError(400, 'Invalid categories');
   }
 
   await AdminEventsModel.updateEvent({
@@ -155,12 +168,12 @@ const updateEvent = async ({
     description: description?.trim(),
     eventDate,
     eventTime,
-    category,
+    categories,
   });
 
   await AdminEventsModel.deleteStudentGrades(eventId);
 
-  if (category === 'STUDENT') {
+  if (categories.includes('STUDENT')) {
     if (!Array.isArray(grades) || grades.length === 0) {
       throw new ApiError(
         400,
@@ -201,30 +214,25 @@ const deleteEvent = async (eventId) => {
 
 
 // Naya function - Filter events service
-const getFilteredEvents = async ({ category, grade }) => {
-  // Validate category if provided
-  if (category && !ALLOWED_CATEGORIES.includes(category)) {
-    throw new ApiError(
-      400,
-      `category must be one of: ${ALLOWED_CATEGORIES.join(', ')}`
-    );
+const getFilteredEvents = async ({ categories, grade }) => {
+  if (categories) {
+    query += `
+      AND (
+        FIND_IN_SET(?, REPLACE(e.category AS categories,' ',''))
+        OR FIND_IN_SET('ALL', REPLACE(e.category AS categories,' ',''))
+      )
+    `;
+
+    params.push(categories);
   }
 
-  // Validate grade if provided
-  if (grade && !ALLOWED_GRADES.includes(grade)) {
-    throw new ApiError(
-      400,
-      `grade must be one of: ${ALLOWED_GRADES.join(', ')}`
-    );
-  }
-
-  const events = await AdminEventsModel.getFilteredEvents({ category, grade });
+  const events = await AdminEventsModel.getFilteredEvents({ categories, grade });
 
   const response = [];
 
   for (const event of events) {
     const grades =
-      event.category === 'STUDENT'
+      event.categories?.split(',').includes('STUDENT')
         ? await AdminEventsModel.findGradesByEventId(event.id)
         : [];
 
@@ -239,7 +247,7 @@ const getFilteredEvents = async ({ category, grade }) => {
   return {
     events: response,
     filters: {
-      category: category || null,
+      categories: categories || null,
       grade: grade || null,
     },
     total: response.length,

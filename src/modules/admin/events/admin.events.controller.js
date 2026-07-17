@@ -1,13 +1,14 @@
 const adminEventsService = require('./admin.events.service');
 
 const createEvent = async (req, res, next) => {
+  console.log(req.body);
   try {
     const data = await adminEventsService.createEvent({
       title: req.body.title,
       description: req.body.description,
       eventDate: req.body.eventDate,
       eventTime: req.body.eventTime,
-      category: req.body.category,
+      categories: req.body.categories,
       grades: req.body.grades,
     });
 
@@ -56,7 +57,7 @@ const updateEvent = async (req, res, next) => {
       description: req.body.description,
       eventDate: req.body.eventDate,
       eventTime: req.body.eventTime,
-      category: req.body.category,
+      categories: req.body.categories,
       grades: req.body.grades,
     });
 
@@ -90,7 +91,7 @@ const getFilteredEvents = async (req, res, next) => {
     const { category, grade } = req.query;
     
     const data = await adminEventsService.getFilteredEvents({
-      category,
+      categories: category,
       grade,
     });
 

@@ -5,8 +5,11 @@ exports.createEvent = async ({
   description,
   eventDate,
   eventTime,
-  category,
+  categories,
 }) => {
+  console.log("categories in model:", categories);
+console.log("Saving:", categories.join(","));
+console.log("NEW MODEL FILE LOADED");
   const [result] = await pool.execute(
     `
       INSERT INTO events (
@@ -18,7 +21,7 @@ exports.createEvent = async ({
       )
       VALUES (?, ?, ?, ?, ?)
     `,
-    [title, description || null, eventDate, eventTime || null, category]
+    [title, description || null, eventDate, eventTime || null, categories.join(',')]
   );
 
   return result.insertId;
@@ -46,7 +49,7 @@ exports.findEventById = async (eventId) => {
         description,
         event_date,
         event_time,
-        category,
+        category AS categories,
         created_at,
         updated_at
       FROM events
@@ -83,7 +86,7 @@ exports.getAllEvents = async () => {
         description,
         event_date,
         event_time,
-        category,
+        category AS categories,
         created_at,
         updated_at
       FROM events
@@ -111,7 +114,7 @@ exports.updateEvent = async ({
   description,
   eventDate,
   eventTime,
-  category,
+  categories,
 }) => {
   const [result] = await pool.execute(
     `
@@ -130,7 +133,7 @@ exports.updateEvent = async ({
       description || null,
       eventDate,
       eventTime || null,
-      category,
+      categories.join(','),
       eventId,
     ]
   );
@@ -153,7 +156,8 @@ exports.softDeleteEvent = async (eventId) => {
 };
 
 // Naya function - Filter events with category and grade
-exports.getFilteredEvents = async ({ category, grade }) => {
+exports.getFilteredEvents = async ({ categories, grade }) => {
+  
   let query = `
     SELECT DISTINCT
       e.id,
@@ -161,7 +165,7 @@ exports.getFilteredEvents = async ({ category, grade }) => {
       e.description,
       e.event_date,
       e.event_time,
-      e.category,
+      e.category AS categories,
       e.created_at,
       e.updated_at
     FROM events e
@@ -171,20 +175,22 @@ exports.getFilteredEvents = async ({ category, grade }) => {
   const params = [];
 
   // Category filter
-  if (category) {
-    if (category === 'STUDENT') {
-      query += ` AND e.category IN ('STUDENT', 'ALL')`;
-    } else {
-      query += ` AND e.category = ?`;
-      params.push(category);
-    }
-  }
+ if (categories) {
+  query += `
+    AND (
+      FIND_IN_SET(?, REPLACE(e.category,' ',''))
+      OR FIND_IN_SET('ALL', REPLACE(e.category,' ',''))
+    )
+  `;
+
+  params.push(categories);
+}
 
   // Grade filter (only for STUDENT category events)
   if (grade) {
     query += `
       AND (
-        e.category != 'STUDENT'
+        NOT FIND_IN_SET('STUDENT', REPLACE(e.category,' ',''))
         OR e.id IN (
           SELECT event_id 
           FROM event_student_grades 
