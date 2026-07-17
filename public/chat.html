@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TIA Global Sandbox - Socket.io Multi-Role Chat</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="chat.css">
+</head>
+<body>
+
+  <!-- App Container -->
+  <div id="app" class="app-container">
+    
+    <!-- Login Overlay -->
+    <div id="login-overlay" class="overlay">
+      <div class="login-card glass">
+        <div class="login-header">
+          <div class="logo-box">💬</div>
+          <h2>TIA Global Chat Sandbox</h2>
+          <p>Login to test real-time chat between Teachers, Students, & Parents</p>
+        </div>
+
+        <!-- Quick Sandbox login buttons -->
+        <div class="quick-login-section">
+          <h3>⚡ Quick Sandbox Login</h3>
+          <div class="quick-login-grid">
+            <button class="quick-login-btn role-teacher" onclick="quickLogin('priya@yopmail.com')">
+              <span class="role-badge teacher">Teacher (2nd Grade)</span>
+              <strong>Priya Mehta</strong>
+              <small>priya@yopmail.com</small>
+            </button>
+            <button class="quick-login-btn role-teacher" onclick="quickLogin('casey@mailinator.com')">
+              <span class="role-badge teacher">Teacher (1st Grade)</span>
+              <strong>casey Boone</strong>
+              <small>casey@mailinator.com</small>
+            </button>
+            
+            <button class="quick-login-btn role-parent" onclick="quickLogin('Mayank@yopmail.com')">
+              <span class="role-badge parent">Parent</span>
+              <strong>Mayank Sharma</strong>
+              <small>Mayank@yopmail.com</small>
+            </button>
+            <button class="quick-login-btn role-parent" onclick="quickLogin('kane@mailinator.com')">
+              <span class="role-badge parent">Parent</span>
+              <strong>kane williamsoon</strong>
+              <small>kane@mailinator.com</small>
+            </button>
+
+            <button class="quick-login-btn role-student" onclick="quickLogin('Rohit@yopmail.com')">
+              <span class="role-badge student">Student (2nd Grade)</span>
+              <strong>Rohit Sharma</strong>
+              <small>Rohit@yopmail.com</small>
+            </button>
+            <button class="quick-login-btn role-student" onclick="quickLogin('elizabeth@mailinator.com')">
+              <span class="role-badge student">Student (1st Grade)</span>
+              <strong>Eliza Son</strong>
+              <small>elizabeth@mailinator.com</small>
+            </button>
+          </div>
+        </div>
+
+        <div class="divider"><span>OR USE CREDENTIALS</span></div>
+
+        <!-- Manual Login Form -->
+        <form id="login-form" onsubmit="handleManualLogin(event)">
+          <div class="form-group">
+            <label for="login-email">Email Address</label>
+            <input type="email" id="login-email" required placeholder="Enter email">
+          </div>
+          <div class="form-group">
+            <label for="login-password">Password</label>
+            <input type="password" id="login-password" required placeholder="Enter password">
+          </div>
+          <button type="submit" class="submit-btn">Login & Connect Sockets</button>
+          <div id="login-error" class="error-msg"></div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <div id="workspace" class="workspace hidden">
+      
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <!-- Sidebar Header (User Info) -->
+        <div class="sidebar-header">
+          <div class="user-profile-details">
+            <div id="current-user-avatar" class="avatar">U</div>
+            <div class="user-meta">
+              <h3 id="current-user-name">Loading...</h3>
+              <div class="role-row">
+                <span id="current-user-role" class="role-badge">Role</span>
+                <span id="socket-status" class="status-badge disconnected">
+                  <span class="pulse-dot"></span> <span class="status-text">Connecting</span>
+                </span>
+              </div>
+            </div>
+          </div>
+          <button class="logout-btn" onclick="logout()" title="Logout">↩</button>
+        </div>
+
+        <!-- Sidebar Navigation Tabs -->
+        <div class="sidebar-tabs">
+          <button id="tab-conversations" class="tab-btn active" onclick="switchSidebarTab('conversations')">
+            Chats <span id="unread-conversations-badge" class="count-badge hidden">0</span>
+          </button>
+          <button id="tab-contacts" class="tab-btn" onclick="switchSidebarTab('contacts')">
+            Contacts
+          </button>
+        </div>
+
+        <!-- Conversations / Contacts list -->
+        <div class="sidebar-list-container">
+          <!-- Conversations List -->
+          <div id="conversations-list" class="list-pane">
+            <div class="empty-state">No conversations yet. Select a contact to start chatting!</div>
+          </div>
+
+          <!-- Contacts List -->
+          <div id="contacts-list" class="list-pane hidden">
+            <div class="empty-state">Loading eligible contacts...</div>
+          </div>
+        </div>
+
+        <!-- System Matrix Guidelines -->
+        <div class="guidelines-card">
+          <h4>📌 Eligibility Matrix Guide</h4>
+          <p>Under backend rules, chats are restricted by Grade matches:</p>
+          <ul>
+            <li><strong>Priya Mehta</strong> (Teacher 2nd Grade) 🔀 <strong>Rohit Sharma</strong> (Student 2nd Grade) & <strong>Mayank Sharma</strong> (Parent)</li>
+            <li><strong>casey Boone</strong> (Teacher 1st Grade) 🔀 <strong>Eliza Son</strong> (Student 1st Grade) & <strong>kane williamsoon</strong> (Parent)</li>
+          </ul>
+          <p class="tip">💡 Open another tab/window to chat in real-time!</p>
+        </div>
+      </aside>
+
+      <!-- Chat viewport -->
+      <main class="chat-viewport">
+        
+        <!-- Welcome Screen -->
+        <div id="chat-welcome-screen" class="welcome-screen">
+          <div class="welcome-icon">💬</div>
+          <h2>Welcome to TIA Chat Workspace</h2>
+          <p>Select an existing conversation from the sidebar or choose an eligible contact to begin messaging.</p>
+        </div>
+
+        <!-- Active Chat Window -->
+        <div id="chat-window" class="chat-window hidden">
+          <!-- Chat Header -->
+          <header class="chat-header">
+            <div class="active-partner-info">
+              <div id="active-partner-avatar" class="avatar">C</div>
+              <div>
+                <h3 id="active-partner-name">Active User</h3>
+                <span id="active-partner-role" class="role-badge">Role</span>
+              </div>
+            </div>
+          </header>
+
+          <!-- Messages Thread -->
+          <div id="messages-container" class="messages-container">
+            <!-- Messages populated dynamically -->
+          </div>
+
+          <!-- Message Input Bar -->
+          <footer class="chat-input-bar">
+            <form id="message-form" onsubmit="sendMessage(event)">
+              <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off" required maxlength="1000">
+              <button type="submit" class="send-btn">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                  <path fill="currentColor" d="M2,21L23,12L2,3V10L17,12L2,14V21Z" />
+                </svg>
+              </button>
+            </form>
+          </footer>
+        </div>
+
+      </main>
+
+    </div>
+  </div>
+
+  <!-- Socket.io client script -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- Custom JS script -->
+  <script src="chat.js"></script>
+</body>
+</html>

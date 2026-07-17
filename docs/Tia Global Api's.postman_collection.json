@@ -1,0 +1,1087 @@
+{
+  "info": {
+    "_postman_id": "2184b759-d9c2-45e0-8898-92b2bdcbd1af",
+    "name": "Tia Global Api's",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "43260022"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Teacher-Signup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"role\": \"teacher\",\n    \"firstName\": \"Priya\",\n    \"lastName\": \"Mehta\",\n    \"phone\": \"9876543211\",\n    \"email\": \"priya@yopmail.com\",\n    \"password\": \"Password@123\",\n    \"qualification\": \"M.Sc\",\n    \"specialization\": \"Maths\",\n    \"experienceYears\": 5\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/users/auth/signup",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users",
+                "auth",
+                "signup"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"casey@mailinator.com\",\n    \"password\": \"Test@123\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/users/auth/login",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Forget-Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"rahul@yopmail.com\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/users/auth/forgot-password",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users",
+                "auth",
+                "forgot-password"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Change-Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "{{bearer_token_17vf}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"password\": \"NewPassword@123\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/users/auth/reset-password",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users",
+                "auth",
+                "reset-password"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Parent-Signup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"role\": \"parent\",\n    \"firstName\": \"Mayank\",\n    \"lastName\": \"Sharma\",\n    \"phone\": \"9876543210\",\n    \"email\": \"Mayank@yopmail.com\",\n    \"password\": \"Password@123\",\n    \"students\": [\n      {\n        \"firstName\": \"Mohit\",\n        \"lastName\": \"Sharma\",\n        \"dob\": \"2015-05-10\",\n        \"gradeLevel\": \"Kindergarten\",\n        \"academy\": \"Global Academy\",\n        \"email\": \"Mohit@yopmail.com\"\n      },\n            {\n        \"firstName\": \"Rohit\",\n        \"lastName\": \"Sharma\",\n        \"dob\": \"2016-05-20\",\n        \"gradeLevel\": \"2nd Grade\",\n        \"academy\": \"Religious Academy\",\n        \"email\": \"Rohit@yopmail.com\"\n      }\n    ]\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/users/auth/signup",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users",
+                "auth",
+                "signup"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Profile Teacher",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{supabase_service_role_api_key_11ep}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{bearer_token_1as1}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/users/auth/profile",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users",
+                "auth",
+                "profile"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Profile Parent/Student",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Nywicm9sZSI6InN0dWRlbnQiLCJpYXQiOjE3ODM1MTY1NDIsImV4cCI6MTc4NDEyMTM0Mn0.L8ORn4D8y5rlDOMlxzGCcV1w0XDdqdTVhoXMxzbFhj8",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": ""
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/users/auth/profile",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users",
+                "auth",
+                "profile"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Student Create password",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Nywicm9sZSI6InN0dWRlbnQiLCJpYXQiOjE3ODM1MTU0NDIsImV4cCI6MTc4NDEyMDI0Mn0.V8-oxrIfRu-0EcycIOROM7uGFiN-CmLtBN7mxV7E4N8",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer STUDENT_TOKEN"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"password\": \"Test@123\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/users/auth/students/create-password",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users",
+                "auth",
+                "students",
+                "create-password"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Parent Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Nywicm9sZSI6InBhcmVudCIsImlhdCI6MTc4MzUxMzU4MSwiZXhwIjoxNzg0MTE4MzgxfQ.4mGn4w53LzMVTIHn3BkIjpeDlFGvQkyBBMHawj1_dDE",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer PARENT_TOKEN"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "type": "text",
+                  "key": "firstName",
+                  "value": "kane"
+                },
+                {
+                  "type": "text",
+                  "key": "lastName",
+                  "value": "williamsoon"
+                },
+                {
+                  "type": "text",
+                  "key": "phone",
+                  "value": "9999999999"
+                },
+                {
+                  "type": "file",
+                  "key": "profileImage",
+                  "src": "/Users/abcd/Downloads/images.webp"
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/users/auth/profile",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users",
+                "auth",
+                "profile"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Teacher Update Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer TEACHER_TOKEN"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "type": "text",
+                  "key": "firstName",
+                  "value": "Ahmed"
+                },
+                {
+                  "type": "text",
+                  "key": "lastName",
+                  "value": "Sir"
+                },
+                {
+                  "type": "text",
+                  "key": "phone",
+                  "value": "8888888888"
+                },
+                {
+                  "type": "text",
+                  "key": "qualification",
+                  "value": "M.Ed"
+                },
+                {
+                  "type": "text",
+                  "key": "specialization",
+                  "value": "Math"
+                },
+                {
+                  "type": "text",
+                  "key": "experienceYears",
+                  "value": "5"
+                },
+                {
+                  "type": "text",
+                  "key": "teachingGrade",
+                  "value": "2nd Grade"
+                },
+                {
+                  "type": "file",
+                  "key": "profileImage",
+                  "src": "/path/to/image.jpg"
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/users/auth/profile",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users",
+                "auth",
+                "profile"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Student Update Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Nywicm9sZSI6InN0dWRlbnQiLCJpYXQiOjE3ODM1MTU0NDIsImV4cCI6MTc4NDEyMDI0Mn0.V8-oxrIfRu-0EcycIOROM7uGFiN-CmLtBN7mxV7E4N8",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer STUDENT_TOKEN"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "type": "text",
+                  "key": "firstName",
+                  "value": "Eliza"
+                },
+                {
+                  "type": "text",
+                  "key": "lastName",
+                  "value": "Son"
+                },
+                {
+                  "type": "text",
+                  "key": "dob",
+                  "value": "2015-01-10"
+                },
+                {
+                  "type": "text",
+                  "key": "gradeLevel",
+                  "value": "1st Grade"
+                },
+                {
+                  "type": "file",
+                  "key": "profileImage",
+                  "src": "/Users/abcd/Downloads/cristiano-ronaldo-3840x2160-17371.jpg"
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/users/auth/profile",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users",
+                "auth",
+                "profile"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Change password",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer YOUR_TOKEN_HERE"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oldPassword\": \"Test@123\",\n  \"newPassword\": \"Test@1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/users/auth/change-password",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users",
+                "auth",
+                "change-password"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add new child after signup (Parent)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer $TOKEN"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "type": "text",
+                  "key": "firstName",
+                  "value": "Aarav"
+                },
+                {
+                  "type": "text",
+                  "key": "lastName",
+                  "value": "Sharma"
+                },
+                {
+                  "type": "text",
+                  "key": "dob",
+                  "value": "2018-05-20"
+                },
+                {
+                  "type": "text",
+                  "key": "gradeLevel",
+                  "value": "1st Grade"
+                },
+                {
+                  "type": "text",
+                  "key": "email",
+                  "value": "aarav@example.com"
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/users/auth/students",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users",
+                "auth",
+                "students"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Child info by parent",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer $TOKEN"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "type": "text",
+                  "key": "firstName",
+                  "value": "Aarav"
+                },
+                {
+                  "type": "text",
+                  "key": "lastName",
+                  "value": "Mehta"
+                },
+                {
+                  "type": "text",
+                  "key": "dob",
+                  "value": "2018-05-20"
+                },
+                {
+                  "type": "text",
+                  "key": "gradeLevel",
+                  "value": "2nd Grade"
+                },
+                {
+                  "type": "text",
+                  "key": "email",
+                  "value": "aarav.new@example.com"
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/users/auth/students/CHILD_STUDENT_ID",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "users",
+                "auth",
+                "students",
+                "CHILD_STUDENT_ID"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Admin Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"jack@yopmail.com\",\n    \"password\": \"Admin@123\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/admin/auth/login",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "admin",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Admin Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJqYWNrQHlvcG1haWwuY29tIiwidHlwZSI6ImFkbWluIiwiaWF0IjoxNzgyMzc5Njk2LCJleHAiOjE3ODI5ODQ0OTZ9.GYEorHRj7PuO5NooHSOIxyldkglD0Rk4aqbFk54LJSY",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{bearer_token_090s}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:5000/api/admin/auth/profile",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "admin",
+                "auth",
+                "profile"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Forget-Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"jack@yopmail.com\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/admin/auth/forgot-password",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "admin",
+                "auth",
+                "forgot-password"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Student Approval",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJqYWNrQHlvcG1haWwuY29tIiwidHlwZSI6ImFkbWluIiwiaWF0IjoxNzgzNTEwNDQ1LCJleHAiOjE3ODQxMTUyNDV9.4CkMo2LSGvvSZwAn5LSqurrhhenEV52jGqRctn952ig",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer ADMIN_TOKEN"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"status\": \"active\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/admin/students/7/status",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "admin",
+                "students",
+                "7",
+                "status"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "change-password",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer $ADMIN_TOKEN"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"oldPassword\": \"old_password_here\",\n    \"newPassword\": \"new_password_here\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "BASE_URL/api/admin/auth/change-password",
+              "host": [
+                "BASE_URL"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "auth",
+                "change-password"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "admin update profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer $ADMIN_TOKEN"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "type": "text",
+                  "key": "name",
+                  "value": "Admin Name"
+                },
+                {
+                  "type": "text",
+                  "key": "phone",
+                  "value": "9876543210"
+                },
+                {
+                  "type": "file",
+                  "key": "profileImage",
+                  "src": "/path/to/profile.jpg"
+                }
+              ]
+            },
+            "url": {
+              "raw": "BASE_URL/api/admin/auth/profile",
+              "host": [
+                "BASE_URL"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "auth",
+                "profile"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "get all teachers",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJqYWNrQHlvcG1haWwuY29tIiwidHlwZSI6ImFkbWluIiwiaWF0IjoxNzgzNjc2ODE4LCJleHAiOjE3ODQyODE2MTh9.vH47F0vkbfEng3frHtxiCejF3bJ5Pusg85Qx3l7g1c8",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer $ADMIN_TOKEN"
+              }
+            ],
+            "url": {
+              "raw": "http://72.60.203.98:7000/api/admin/teachers",
+              "protocol": "http",
+              "host": [
+                "72",
+                "60",
+                "203",
+                "98"
+              ],
+              "port": "7000",
+              "path": [
+                "api",
+                "admin",
+                "teachers"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "get all parents with students",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJqYWNrQHlvcG1haWwuY29tIiwidHlwZSI6ImFkbWluIiwiaWF0IjoxNzgzNjc2ODE4LCJleHAiOjE3ODQyODE2MTh9.vH47F0vkbfEng3frHtxiCejF3bJ5Pusg85Qx3l7g1c8",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer $ADMIN_TOKEN"
+              }
+            ],
+            "url": {
+              "raw": "BASE_URL/api/admin/parents",
+              "host": [
+                "BASE_URL"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "parents"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "approval parent",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer $ADMIN_TOKEN"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"role\": \"teacher\",\n    \"status\": \"active\"\n  }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/admin/users/9/approval",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5000",
+              "path": [
+                "api",
+                "admin",
+                "users",
+                "9",
+                "approval"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "health check api",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/health",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "health"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "bearer_token_17vf",
+      "secret": true
+    },
+    {
+      "key": "bearer_token_1as1",
+      "secret": true
+    },
+    {
+      "key": "supabase_service_role_api_key_11ep",
+      "secret": true
+    },
+    {
+      "key": "auth_secret_1d9y",
+      "secret": true
+    },
+    {
+      "key": "bearer_token_090s",
+      "secret": true
+    },
+    {
+      "key": "auth_secret_0wfm",
+      "secret": true
+    }
+  ]
+}

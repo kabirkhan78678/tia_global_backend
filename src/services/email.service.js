@@ -26,8 +26,13 @@ const createTransporter = () =>
   });
 
 const sendEmail = async ({ to, subject, text, html, attachments = [] }) => {
+  console.log(`\n\x1b[33m[EMAIL] Initializing email dispatch...\x1b[0m`);
+  console.log(`  Recipient : ${to}`);
+  console.log(`  Subject   : ${subject}`);
+
   if (!isSmtpConfigured()) {
-    console.warn('SMTP is not configured. Skipping email:', subject);
+    console.warn(`\x1b[31m[EMAIL] [WARNING] SMTP is not fully configured!\x1b[0m`);
+    console.log(`  Config check: host="${env.smtp.host}", user="${env.smtp.user}", hasPassword=${!!env.smtp.password}, from="${env.smtp.from}"`);
     return;
   }
 
@@ -42,14 +47,30 @@ const sendEmail = async ({ to, subject, text, html, attachments = [] }) => {
     });
   }
 
-  await transporter.sendMail({
-    from: env.smtp.from,
-    to,
-    subject,
-    text,
-    html,
-    attachments: allAttachments,
-  });
+  try {
+    const info = await transporter.sendMail({
+      from: env.smtp.from,
+      to,
+      subject,
+      text,
+      html,
+      attachments: allAttachments,
+    });
+    console.log(`\x1b[32m[EMAIL] [SUCCESS] Email sent successfully!\x1b[0m`);
+    console.log(`  Message ID: ${info.messageId}`);
+    if (info.response) {
+      console.log(`  Response  : ${info.response}`);
+    }
+    console.log('');
+  } catch (error) {
+    console.error(`\x1b[31m[EMAIL] [ERROR] Failed to send email to ${to}!\x1b[0m`);
+    console.error(`  Error Message: ${error.message}`);
+    if (error.stack) {
+      console.error(error.stack);
+    }
+    console.log('');
+    throw error;
+  }
 };
 
 const sendParentWelcomeEmail = async ({ to, firstName, students = [] }) => {

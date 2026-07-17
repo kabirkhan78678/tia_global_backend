@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const { Server } = require('socket.io');
 
+const env = require('../config/env');
 const registerChatSocket = require('../modules/chat/chat.socket');
 
 const extractBearerToken = (socket) => {
@@ -50,6 +51,36 @@ const initializeSocket = (httpServer) => {
   io.use(authenticateSocket);
 
   io.on('connection', (socket) => {
+    const user = socket.user;
+
+    if (env.debug) {
+      console.log(
+        `\x1b[34m[SOCKET]\x1b[0m \x1b[32mConnected\x1b[0m - Socket ID: ${socket.id}, User: ${user.role}:${user.id}`
+      );
+
+      // Log every incoming socket event packet
+      socket.use((packet, next) => {
+        const [eventName, payload] = packet;
+        const safePayload = typeof payload === 'object' && payload !== null ? { ...payload } : payload;
+        if (safePayload && typeof safePayload === 'object' && safePayload.password) {
+          safePayload.password = '********';
+        }
+        console.log(
+          `\x1b[34m[SOCKET]\x1b[0m \x1b[36m[EVENT]\x1b[0m ${eventName} from User(${user.role}:${user.id})`
+        );
+        if (safePayload !== undefined && Object.keys(safePayload || {}).length > 0) {
+          console.log(`  \x1b[90mPayload:\x1b[0m`, JSON.stringify(safePayload));
+        }
+        next();
+      });
+
+      socket.on('disconnect', (reason) => {
+        console.log(
+          `\x1b[34m[SOCKET]\x1b[0m \x1b[31mDisconnected\x1b[0m - Socket ID: ${socket.id}, User: ${user.role}:${user.id}, Reason: ${reason}`
+        );
+      });
+    }
+
     registerChatSocket(io, socket);
   });
 

@@ -1,15 +1,13 @@
 const ChatService = require('./chat.service');
 
-const emitAck = async (socket, ack, action) => {
+const emitResponse = async (socket, responseEvent, action) => {
   try {
     const data = await action();
 
-    if (typeof ack === 'function') {
-      ack({
-        success: true,
-        data,
-      });
-    }
+    socket.emit(responseEvent, {
+      success: true,
+      data,
+    });
 
     return data;
   } catch (error) {
@@ -21,11 +19,7 @@ const emitAck = async (socket, ack, action) => {
       },
     };
 
-    if (typeof ack === 'function') {
-      ack(payload);
-      return null;
-    }
-
+    socket.emit(responseEvent, payload);
     socket.emit('chat:error', payload.error);
     return null;
   }
@@ -36,8 +30,8 @@ const registerChatSocket = (io, socket) => {
 
   socket.join(ChatService.userRoom(authUser));
 
-  socket.on('chat:list', async (payload = {}, ack) => {
-    await emitAck(socket, ack, () =>
+  socket.on('chat:list', async (payload = {}) => {
+    await emitResponse(socket, 'chat:list:response', () =>
       ChatService.listConversations({
         authUser,
         payload,
@@ -45,17 +39,21 @@ const registerChatSocket = (io, socket) => {
     );
   });
 
-  socket.on('chat:contacts', async (payload = {}, ack) => {
-    await emitAck(socket, ack, () =>
+  socket.on('chat:contacts', async (payload = {}) => {
+    await emitResponse(socket, 'chat:contacts:response', () =>
       ChatService.listContacts({
         authUser,
         payload,
       })
+
     );
+    console.log(payload, "chat:contacts")
   });
 
-  socket.on('chat:conversation:create', async (payload = {}, ack) => {
-    const conversation = await emitAck(socket, ack, () =>
+  // console.log(payload, "chat:contacts")
+
+  socket.on('chat:conversation:create', async (payload = {}) => {
+    const conversation = await emitResponse(socket, 'chat:conversation:create:response', () =>
       ChatService.getOrCreateConversation({
         authUser,
         recipientRole: payload.recipientRole,
@@ -70,8 +68,8 @@ const registerChatSocket = (io, socket) => {
     socket.join(ChatService.conversationRoom(conversation.id));
   });
 
-  socket.on('chat:join', async (payload = {}, ack) => {
-    const conversation = await emitAck(socket, ack, async () => {
+  socket.on('chat:join', async (payload = {}) => {
+    const conversation = await emitResponse(socket, 'chat:join:response', async () => {
       const row = await ChatService.getConversationForUser({
         authUser,
         conversationId: payload.conversationId,
@@ -89,8 +87,8 @@ const registerChatSocket = (io, socket) => {
     socket.join(ChatService.conversationRoom(conversation.conversationId));
   });
 
-  socket.on('chat:messages', async (payload = {}, ack) => {
-    const result = await emitAck(socket, ack, () =>
+  socket.on('chat:messages', async (payload = {}) => {
+    const result = await emitResponse(socket, 'chat:messages:response', () =>
       ChatService.getMessages({
         authUser,
         payload,
@@ -102,8 +100,8 @@ const registerChatSocket = (io, socket) => {
     }
   });
 
-  socket.on('chat:message:send', async (payload = {}, ack) => {
-    const result = await emitAck(socket, ack, () =>
+  socket.on('chat:message:send', async (payload = {}) => {
+    const result = await emitResponse(socket, 'chat:message:send:response', () =>
       ChatService.sendMessage({
         authUser,
         payload,
@@ -127,8 +125,8 @@ const registerChatSocket = (io, socket) => {
     }
   });
 
-  socket.on('chat:read', async (payload = {}, ack) => {
-    const result = await emitAck(socket, ack, () =>
+  socket.on('chat:read', async (payload = {}) => {
+    const result = await emitResponse(socket, 'chat:read:response', () =>
       ChatService.markRead({
         authUser,
         payload,
