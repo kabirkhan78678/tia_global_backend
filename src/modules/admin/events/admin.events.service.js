@@ -215,17 +215,6 @@ const deleteEvent = async (eventId) => {
 
 // Naya function - Filter events service
 const getFilteredEvents = async ({ categories, grade }) => {
-  if (categories) {
-    query += `
-      AND (
-        FIND_IN_SET(?, REPLACE(e.category AS categories,' ',''))
-        OR FIND_IN_SET('ALL', REPLACE(e.category AS categories,' ',''))
-      )
-    `;
-
-    params.push(categories);
-  }
-
   const events = await AdminEventsModel.getFilteredEvents({ categories, grade });
 
   const response = [];
