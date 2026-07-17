@@ -11,12 +11,10 @@ const { verifyAdminToken } = require('../../../middlewares/admin.middleware');
 
 const router = express.Router();
 
-router.use(verifyAdminToken);
-
-router.get('/teachers', getTeachers);
-router.get('/parents', getParents);
-router.patch('/parents/:id/status', updateParentStatus);
-router.patch('/students/:id/status', updateStudentStatus);
-router.patch('/users/:userId/approval', updateApprovalStatus);
+router.get('/teachers', verifyAdminToken, getTeachers);
+router.get('/parents', verifyAdminToken, getParents);
+router.patch('/parents/:id/status', verifyAdminToken, updateParentStatus);
+router.patch('/students/:id/status', verifyAdminToken, updateStudentStatus);
+router.patch('/users/:userId/approval', verifyAdminToken, updateApprovalStatus);
 
 module.exports = router;
