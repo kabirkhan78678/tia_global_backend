@@ -1,5 +1,7 @@
 const ChatService = require('./chat.service');
 
+console.log('[CHAT_SOCKET_LOAD] ChatService keys at module load:', Object.keys(ChatService || {}));
+
 const emitResponse = async (socket, responseEvent, action) => {
   try {
     const data = await action();
@@ -28,36 +30,38 @@ const emitResponse = async (socket, responseEvent, action) => {
 const registerChatSocket = (io, socket) => {
   const authUser = socket.user;
 
+  console.log('[CHAT_SOCKET_CONN] ChatService keys at connection:', Object.keys(ChatService || {}));
+  console.log('[CHAT_SOCKET_CONN] userRoom type:', typeof ChatService.userRoom);
+
   socket.join(ChatService.userRoom(authUser));
 
-  socket.on('chat:list', async (payload = {}) => {
+  socket.on('chat:list', async (payload) => {
+    const safePayload = payload || {};
     await emitResponse(socket, 'chat:list:response', () =>
       ChatService.listConversations({
         authUser,
-        payload,
+        payload: safePayload,
       })
     );
   });
 
-  socket.on('chat:contacts', async (payload = {}) => {
+  socket.on('chat:contacts', async (payload) => {
+    const safePayload = payload || {};
     await emitResponse(socket, 'chat:contacts:response', () =>
       ChatService.listContacts({
         authUser,
-        payload,
+        payload: safePayload,
       })
-
     );
-    console.log(payload, "chat:contacts")
   });
 
-  // console.log(payload, "chat:contacts")
-
-  socket.on('chat:conversation:create', async (payload = {}) => {
+  socket.on('chat:conversation:create', async (payload) => {
+    const safePayload = payload || {};
     const conversation = await emitResponse(socket, 'chat:conversation:create:response', () =>
       ChatService.getOrCreateConversation({
         authUser,
-        recipientRole: payload.recipientRole,
-        recipientId: payload.recipientId,
+        recipientRole: safePayload.recipientRole,
+        recipientId: safePayload.recipientId,
       })
     );
 
@@ -68,11 +72,12 @@ const registerChatSocket = (io, socket) => {
     socket.join(ChatService.conversationRoom(conversation.id));
   });
 
-  socket.on('chat:join', async (payload = {}) => {
+  socket.on('chat:join', async (payload) => {
+    const safePayload = payload || {};
     const conversation = await emitResponse(socket, 'chat:join:response', async () => {
       const row = await ChatService.getConversationForUser({
         authUser,
-        conversationId: payload.conversationId,
+        conversationId: safePayload.conversationId,
       });
 
       return {
@@ -87,11 +92,12 @@ const registerChatSocket = (io, socket) => {
     socket.join(ChatService.conversationRoom(conversation.conversationId));
   });
 
-  socket.on('chat:messages', async (payload = {}) => {
+  socket.on('chat:messages', async (payload) => {
+    const safePayload = payload || {};
     const result = await emitResponse(socket, 'chat:messages:response', () =>
       ChatService.getMessages({
         authUser,
-        payload,
+        payload: safePayload,
       })
     );
 
@@ -100,11 +106,12 @@ const registerChatSocket = (io, socket) => {
     }
   });
 
-  socket.on('chat:message:send', async (payload = {}) => {
+  socket.on('chat:message:send', async (payload) => {
+    const safePayload = payload || {};
     const result = await emitResponse(socket, 'chat:message:send:response', () =>
       ChatService.sendMessage({
         authUser,
-        payload,
+        payload: safePayload,
       })
     );
 
@@ -125,11 +132,12 @@ const registerChatSocket = (io, socket) => {
     }
   });
 
-  socket.on('chat:read', async (payload = {}) => {
+  socket.on('chat:read', async (payload) => {
+    const safePayload = payload || {};
     const result = await emitResponse(socket, 'chat:read:response', () =>
       ChatService.markRead({
         authUser,
-        payload,
+        payload: safePayload,
       })
     );
 

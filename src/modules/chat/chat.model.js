@@ -383,7 +383,7 @@ exports.findMessagesByConversationId = async ({ conversationId, beforeMessageId,
 
   params.push(limit);
 
-  const [rows] = await pool.execute(
+  const [rows] = await pool.query(
     `
       SELECT *
       FROM chat_messages
@@ -446,7 +446,7 @@ exports.findConversationList = async ({ authUser, limit, offset }) => {
     student: 'c.student_id = ?',
   };
 
-  const [rows] = await pool.execute(
+  const [rows] = await pool.query(
     `
       SELECT
         c.*,
