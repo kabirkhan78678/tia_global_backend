@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const ApiError = require('../../../utils/apiError');
 const AdminUsersModel = require('./admin.users.model');
 const { sendStudentApprovedEmail } = require('../../../services/email.service');
+const InvoiceService = require("../invoices/admin.invoices.service");
 
 const ALLOWED_ROLES = ['parent', 'teacher'];
 const ALLOWED_APPROVAL_STATUSES = ['pending', 'active', 'inactive'];
@@ -231,6 +232,8 @@ const updateStudentStatus = async ({ studentId, status }) => {
         status: 'active',
       });
     }
+    // Create invoice automatically
+    await InvoiceService.createStudentInvoice(studentId);
 
     return {
       message: 'student active successfully',
