@@ -330,3 +330,122 @@ module.exports = {
   sendStudentRegistrationReceivedEmail,
   sendTeacherWelcomeEmail,
 };
+
+const sendInvoiceGeneratedEmail = async ({ to, parentName, studentName, invoiceNumber, grandTotal, currency, dueDate }) => {
+  const subject = 'Student Admission Approved - Invoice Generated';
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+      <h2 style="color: #1e3a8a;">TIA Global Academy</h2>
+      <h3>Student Admission Approved & Invoice Generated</h3>
+      <p>Dear ${parentName || 'Parent'},</p>
+      <p>We are pleased to inform you that <strong>${studentName}</strong>'s admission has been approved!</p>
+      <div style="background-color: #f8fafc; padding: 15px; border-radius: 6px; margin: 20px 0;">
+        <p><strong>Invoice Number:</strong> ${invoiceNumber}</p>
+        <p><strong>Total Amount Due:</strong> ${currency} ${parseFloat(grandTotal).toFixed(2)}</p>
+        <p><strong>Due Date:</strong> ${dueDate ? new Date(dueDate).toLocaleDateString() : 'Immediate'}</p>
+        <p><strong>Status:</strong> <span style="color: #d97706; font-weight: bold;">Pending Payment</span></p>
+      </div>
+      <p style="color: #dc2626; font-weight: bold;">Note: Academic features and resources will be unlocked once the invoice is paid.</p>
+      <p>Best regards,<br/>TIA Global Team</p>
+    </div>
+  `;
+
+  await sendEmail({ to, subject, html });
+};
+
+const sendPaymentReminderEmail = async ({ to, parentName, studentName, invoiceNumber, grandTotal, currency }) => {
+  const subject = 'Payment Reminder - Invoice Pending';
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+      <h2 style="color: #1e3a8a;">TIA Global Academy</h2>
+      <h3>Payment Reminder</h3>
+      <p>Dear ${parentName || 'Parent'},</p>
+      <p>This is a reminder that the invoice for <strong>${studentName}</strong> is still pending payment.</p>
+      <div style="background-color: #fffbeb; padding: 15px; border-radius: 6px; margin: 20px 0;">
+        <p><strong>Invoice Number:</strong> ${invoiceNumber}</p>
+        <p><strong>Total Amount:</strong> ${currency} ${parseFloat(grandTotal).toFixed(2)}</p>
+      </div>
+      <p>Please complete the payment to activate full access to academic resources.</p>
+      <p>Best regards,<br/>TIA Global Team</p>
+    </div>
+  `;
+
+  await sendEmail({ to, subject, html });
+};
+
+const sendPaymentSuccessEmail = async ({ to, parentName, studentName, invoiceNumber, amountPaid, currency, transactionRef }) => {
+  const subject = 'Payment Successful - Invoice Paid';
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+      <h2 style="color: #166534;">TIA Global Academy</h2>
+      <h3 style="color: #15803d;">Payment Successful & Account Activated!</h3>
+      <p>Dear ${parentName || 'Parent'},</p>
+      <p>Thank you! We have received your payment for <strong>${studentName}</strong>.</p>
+      <div style="background-color: #f0fdf4; padding: 15px; border-radius: 6px; margin: 20px 0;">
+        <p><strong>Invoice Number:</strong> ${invoiceNumber}</p>
+        <p><strong>Transaction Ref:</strong> ${transactionRef || 'N/A'}</p>
+        <p><strong>Amount Paid:</strong> ${currency} ${parseFloat(amountPaid).toFixed(2)}</p>
+        <p><strong>Status:</strong> <span style="color: #166534; font-weight: bold;">PAID</span></p>
+      </div>
+      <p style="color: #15803d; font-weight: bold;">🎉 All academic resources, assignments, books, and chat features are now fully unlocked for ${studentName}!</p>
+      <p>Best regards,<br/>TIA Global Team</p>
+    </div>
+  `;
+
+  await sendEmail({ to, subject, html });
+};
+
+const sendReceiptEmail = async ({ to, parentName, studentName, invoiceNumber, amountPaid, currency, paidAt, items = [] }) => {
+  const subject = `Payment Receipt - ${invoiceNumber}`;
+  const itemsHtml = items
+    .map(
+      (item) =>
+        `<tr>
+          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">${item.item_name}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: center;">${item.quantity || 1}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right;">${currency} ${parseFloat(item.total).toFixed(2)}</td>
+        </tr>`
+    )
+    .join('');
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+      <h2 style="color: #1e3a8a;">TIA Global Academy - Official Receipt</h2>
+      <p>Dear ${parentName || 'Parent'},</p>
+      <p>Here is your official receipt for student <strong>${studentName}</strong>.</p>
+      <div style="background-color: #f8fafc; padding: 15px; border-radius: 6px; margin: 20px 0;">
+        <p><strong>Receipt Date:</strong> ${paidAt ? new Date(paidAt).toLocaleDateString() : new Date().toLocaleDateString()}</p>
+        <p><strong>Invoice Number:</strong> ${invoiceNumber}</p>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+          <thead>
+            <tr style="background-color: #e2e8f0;">
+              <th style="padding: 8px; text-align: left;">Item Description</th>
+              <th style="padding: 8px; text-align: center;">Qty</th>
+              <th style="padding: 8px; text-align: right;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsHtml}
+          </tbody>
+        </table>
+        <h4 style="text-align: right; margin-top: 15px;">Total Paid: ${currency} ${parseFloat(amountPaid).toFixed(2)}</h4>
+      </div>
+      <p>Thank you for choosing TIA Global Academy.</p>
+    </div>
+  `;
+
+  await sendEmail({ to, subject, html });
+};
+
+module.exports = {
+  sendAdminPasswordResetLinkEmail,
+  sendParentWelcomeEmail,
+  sendPasswordResetLinkEmail,
+  sendStudentApprovedEmail,
+  sendStudentRegistrationReceivedEmail,
+  sendTeacherWelcomeEmail,
+  sendInvoiceGeneratedEmail,
+  sendPaymentReminderEmail,
+  sendPaymentSuccessEmail,
+  sendReceiptEmail,
+};

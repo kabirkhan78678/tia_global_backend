@@ -3,6 +3,7 @@ const crypto = require('crypto');
 
 const ApiError = require('../../../utils/apiError');
 const AdminUsersModel = require('./admin.users.model');
+const InvoiceService = require('../../../services/invoice.service');
 const { sendStudentApprovedEmail } = require('../../../services/email.service');
 
 const ALLOWED_ROLES = ['parent', 'teacher'];
@@ -16,6 +17,14 @@ const sendAdminEmail = async (sendEmail) => {
     await sendEmail();
   } catch (error) {
     console.error('Admin user email failed:', error.message);
+  }
+};
+
+const triggerStudentInvoice = async (studentId) => {
+  try {
+    await InvoiceService.generateInvoiceForStudent(studentId);
+  } catch (error) {
+    console.error(`Failed to generate automatic invoice for student ${studentId}:`, error.message);
   }
 };
 
@@ -117,6 +126,8 @@ const activateParentChildren = async (parentId) => {
         password: hashedPassword,
       });
 
+      await triggerStudentInvoice(student.id);
+
       await sendAdminEmail(() =>
         sendStudentApprovedEmail({
           to: student.email,
@@ -213,6 +224,8 @@ const updateStudentStatus = async ({ studentId, status }) => {
         password: hashedPassword,
       });
 
+      await triggerStudentInvoice(studentId);
+
       await sendAdminEmail(() =>
         sendStudentApprovedEmail({
           to: student.email,
@@ -221,6 +234,7 @@ const updateStudentStatus = async ({ studentId, status }) => {
       );
     } else {
       await AdminUsersModel.updateStudentStatus({ studentId, status });
+      await triggerStudentInvoice(studentId);
     }
 
     const parent = await AdminUsersModel.findParentByStudentId(studentId);

@@ -18,6 +18,17 @@ const verifyToken = (req, res, next) => {
   }
 };
 
+const authorizeRoles = (...roles) => {
+  return (req, res, next) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return next(new ApiError(403, 'Access denied. Unauthorized role.'));
+    }
+    return next();
+  };
+};
+
 module.exports = {
   verifyToken,
+  authorizeRoles,
 };
+

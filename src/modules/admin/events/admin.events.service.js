@@ -19,7 +19,7 @@ const formatEvent = (event, grades = []) => ({
   eventDate: event.event_date,
   eventTime: event.event_time,
   categories: event.categories
-  ? event.categories.split(',')
+  ? event.categories.split(',').map((c) => c.trim())
   : [],
   grades,
   createdAt: event.created_at,
@@ -66,7 +66,9 @@ const invalidCategories = categories.filter(
         'Please select at least one student grade'
       );
     }
+  }
 
+  if (Array.isArray(grades) && grades.length > 0) {
     for (const grade of grades) {
       if (!ALLOWED_GRADES.includes(grade)) {
         throw new ApiError(400, `Invalid grade : ${grade}`);
@@ -82,7 +84,7 @@ const invalidCategories = categories.filter(
     categories,
   });
 
-if (categories.includes('STUDENT')) {
+  if (Array.isArray(grades) && grades.length > 0) {
     for (const grade of grades) {
       await AdminEventsModel.addStudentGrade({
         eventId,
@@ -103,10 +105,7 @@ const getEvents = async () => {
   const response = [];
 
   for (const event of events) {
-    const grades =
-      event.categories?.split(',').includes('STUDENT')
-        ? await AdminEventsModel.findGradesByEventId(event.id)
-        : [];
+    const grades = await AdminEventsModel.findGradesByEventId(event.id);
 
     response.push(
       formatEvent(
@@ -128,10 +127,7 @@ const getEventById = async (eventId) => {
     throw new ApiError(404, 'Event not found');
   }
 
-  const grades =
-    event.categories?.split(',').includes('STUDENT')
-      ? await AdminEventsModel.findGradesByEventId(event.id)
-      : [];
+  const grades = await AdminEventsModel.findGradesByEventId(event.id);
 
   return formatEvent(
     event,
@@ -162,6 +158,23 @@ const updateEvent = async ({
     throw new ApiError(400, 'Invalid categories');
   }
 
+  if (categories && categories.includes('STUDENT')) {
+    if (!Array.isArray(grades) || grades.length === 0) {
+      throw new ApiError(
+        400,
+        'Please select at least one student grade'
+      );
+    }
+  }
+
+  if (Array.isArray(grades) && grades.length > 0) {
+    for (const grade of grades) {
+      if (!ALLOWED_GRADES.includes(grade)) {
+        throw new ApiError(400, `Invalid grade : ${grade}`);
+      }
+    }
+  }
+
   await AdminEventsModel.updateEvent({
     eventId,
     title: title.trim(),
@@ -173,19 +186,8 @@ const updateEvent = async ({
 
   await AdminEventsModel.deleteStudentGrades(eventId);
 
-  if (categories.includes('STUDENT')) {
-    if (!Array.isArray(grades) || grades.length === 0) {
-      throw new ApiError(
-        400,
-        'Please select at least one student grade'
-      );
-    }
-
+  if (Array.isArray(grades) && grades.length > 0) {
     for (const grade of grades) {
-      if (!ALLOWED_GRADES.includes(grade)) {
-        throw new ApiError(400, `Invalid grade : ${grade}`);
-      }
-
       await AdminEventsModel.addStudentGrade({
         eventId,
         grade,
@@ -220,10 +222,7 @@ const getFilteredEvents = async ({ categories, grade }) => {
   const response = [];
 
   for (const event of events) {
-    const grades =
-      event.categories?.split(',').includes('STUDENT')
-        ? await AdminEventsModel.findGradesByEventId(event.id)
-        : [];
+    const grades = await AdminEventsModel.findGradesByEventId(event.id);
 
     response.push(
       formatEvent(

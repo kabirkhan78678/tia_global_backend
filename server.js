@@ -1,10 +1,27 @@
 const chalk = require('chalk');
 const http = require('http');
+const os = require('os');
+
 const app = require('./src/app');
 const env = require('./src/config/env');
 const { testConnection } = require('./src/config/db');
 const { printRoutes } = require('./src/utils/routeLogger');
 const initializeSocket = require('./src/socket');
+
+// Get Local IP Address
+const getLocalIp = () => {
+  const interfaces = os.networkInterfaces();
+
+  for (const interfaceName of Object.keys(interfaces)) {
+    for (const iface of interfaces[interfaceName]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+
+  return '127.0.0.1';
+};
 
 const startServer = async () => {
   console.log(chalk.cyan.bold('\n🚀 Starting API...\n'));
@@ -17,10 +34,12 @@ const startServer = async () => {
     const httpServer = http.createServer(app);
     initializeSocket(httpServer);
 
-    httpServer.listen(env.port, () => {
-      console.log('\n' + '='.repeat(60));
+    httpServer.listen(env.port, '0.0.0.0', () => {
+      const localIp = getLocalIp();
+
+      console.log('\n' + '='.repeat(70));
       console.log(chalk.green.bold('🚀 SERVER STARTED SUCCESSFULLY'));
-      console.log('='.repeat(60));
+      console.log('='.repeat(70));
 
       console.log(
         `${chalk.blue('🌐 Environment :')} ${chalk.white(env.nodeEnv)}`
@@ -34,19 +53,26 @@ const startServer = async () => {
         )}`
       );
 
+      console.log('');
+      console.log(chalk.green.bold('📍 Server URLs'));
       console.log(
-        `${chalk.blue('🔗 Base URL    :')} ${chalk.white(
+        `${chalk.blue('🏠 Localhost   :')} ${chalk.white(
           `http://localhost:${env.port}`
+        )}`
+      );
+      console.log(
+        `${chalk.blue('🌐 Local IP    :')} ${chalk.white(
+          `http://${localIp}:${env.port}`
         )}`
       );
 
       console.log('');
       printRoutes(app);
 
-      console.log('='.repeat(60) + '\n');
+      console.log('='.repeat(70) + '\n');
     });
   } catch (error) {
-    console.log('\n' + '='.repeat(60));
+    console.log('\n' + '='.repeat(70));
     console.error(chalk.red.bold('❌ SERVER STARTUP FAILED'));
     console.error(
       chalk.red(
@@ -58,7 +84,7 @@ const startServer = async () => {
       console.error(chalk.gray(error.stack));
     }
 
-    console.log('='.repeat(60) + '\n');
+    console.log('='.repeat(70) + '\n');
 
     process.exit(1);
   }
