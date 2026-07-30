@@ -339,7 +339,15 @@ exports.touchConversation = async (conversationId) => {
   );
 };
 
-exports.createMessage = async ({ conversationId, senderRole, senderId, body }) => {
+exports.createMessage = async ({
+  conversationId,
+  senderRole,
+  senderId,
+  body,
+  attachmentUrl = null,
+  attachmentName = null,
+  attachmentType = null,
+}) => {
   const [result] = await pool.execute(
     `
       INSERT INTO chat_messages
@@ -347,11 +355,22 @@ exports.createMessage = async ({ conversationId, senderRole, senderId, body }) =
         conversation_id,
         sender_role,
         sender_id,
-        body
+        body,
+        attachment_url,
+        attachment_name,
+        attachment_type
       )
-      VALUES (?,?,?,?)
+      VALUES (?,?,?,?,?,?,?)
       `,
-    [conversationId, senderRole, senderId, body]
+    [
+      conversationId,
+      senderRole,
+      senderId,
+      body,
+      attachmentUrl,
+      attachmentName,
+      attachmentType,
+    ]
   );
 
   return result.insertId;

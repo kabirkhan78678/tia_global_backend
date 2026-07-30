@@ -32,7 +32,8 @@ const startServer = async () => {
     console.log(chalk.green('✅ Database connected successfully'));
 
     const httpServer = http.createServer(app);
-    initializeSocket(httpServer);
+    const io = initializeSocket(httpServer);
+    app.set('io', io);
 
     httpServer.listen(env.port, '0.0.0.0', () => {
       const localIp = getLocalIp();

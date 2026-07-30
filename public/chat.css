@@ -732,3 +732,83 @@ body {
 .send-btn:hover {
   background: var(--color-teacher-dark);
 }
+
+/* Chat Attachment System Styles */
+.attachment-btn {
+  background: transparent;
+  color: var(--text-muted);
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 6px;
+  transition: background var(--transition-speed), color var(--transition-speed);
+}
+
+.attachment-btn:hover {
+  background: var(--bg-accent);
+  color: var(--text-main);
+}
+
+.attachment-preview-container {
+  display: flex;
+  padding: 0.5rem 0;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid var(--bg-accent);
+}
+
+.preview-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-accent);
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--color-teacher);
+}
+
+.preview-name {
+  color: var(--text-main);
+  font-size: 0.85rem;
+  font-weight: 500;
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cancel-preview-btn {
+  background: transparent;
+  color: #EF4444;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+
+.cancel-preview-btn:hover {
+  color: #F87171;
+}
+
+.message-bubble {
+  max-width: 100%;
+}
+
+.message-attachment-image img {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: transform var(--transition-speed);
+}
+
+.message-attachment-image img:hover {
+  transform: scale(1.02);
+}
+
+.message-attachment-file a:hover {
+  text-decoration: none !important;
+}

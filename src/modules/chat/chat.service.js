@@ -60,6 +60,11 @@ const formatMessage = (message) => ({
     id: message.sender_id,
   },
   body: message.body,
+  attachment: message.attachment_url ? {
+    url: message.attachment_url,
+    name: message.attachment_name,
+    type: message.attachment_type,
+  } : null,
   createdAt: message.created_at,
 });
 
@@ -435,12 +440,13 @@ const sendMessage = async ({ authUser, payload = {} }) => {
   await assertCurrentUserIsActive(authUser);
 
   const body = normalizeMessageBody(payload.body);
+  const hasAttachment = !!(payload.attachmentUrl || payload.attachmentName || payload.attachmentType);
 
-  if (!body) {
-    throw new ApiError(400, 'Message body is required');
+  if (!body && !hasAttachment) {
+    throw new ApiError(400, 'Message body or attachment is required');
   }
 
-  if (body.length > MAX_MESSAGE_LENGTH) {
+  if (body && body.length > MAX_MESSAGE_LENGTH) {
     throw new ApiError(400, `Message body cannot exceed ${MAX_MESSAGE_LENGTH} characters`);
   }
 
@@ -466,6 +472,9 @@ const sendMessage = async ({ authUser, payload = {} }) => {
     senderRole: authUser.role,
     senderId: authUser.id,
     body,
+    attachmentUrl: payload.attachmentUrl || null,
+    attachmentName: payload.attachmentName || null,
+    attachmentType: payload.attachmentType || null,
   });
 
   await ChatModel.touchConversation(conversation.id);

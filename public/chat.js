@@ -6,6 +6,7 @@ let currentUser = JSON.parse(localStorage.getItem('chat_user') || 'null');
 let activeConversationId = null;
 let activePartner = null; // { role, id, name }
 let activeTab = 'conversations'; // conversations | contacts
+let pendingAttachment = null; // { url, name, type }
 
 // UI Elements
 const loginOverlay = document.getElementById('login-overlay');
@@ -396,6 +397,7 @@ function connectSocket() {
       return;
     }
     messageInput.value = '';
+    clearAttachmentPreview();
   });
 
   socket.on('chat:read:response', (ack) => {
@@ -552,12 +554,37 @@ function appendMessage(msg) {
     ticks = `<span class="read-status">✓</span>`;
   }
 
+  let attachmentHtml = '';
+  if (msg.attachment) {
+    const isImg = msg.attachment.type.startsWith('image/');
+    if (isImg) {
+      attachmentHtml = `
+        <div class="message-attachment-image">
+          <img src="${msg.attachment.url}" alt="${msg.attachment.name}" onclick="window.open(this.src, '_blank')" style="cursor: zoom-in; max-width: 100%; max-height: 250px; border-radius: 8px; margin-top: 5px; display: block;">
+        </div>
+      `;
+    } else {
+      attachmentHtml = `
+        <div class="message-attachment-file" style="margin-top: 5px; display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.15); padding: 8px 12px; border-radius: 6px;">
+          <span style="font-size: 1.2rem;">📄</span>
+          <div style="display: flex; flex-direction: column; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            <a href="${msg.attachment.url}" target="_blank" download="${msg.attachment.name}" style="color: var(--text-main); font-weight: 500; font-size: 0.85rem; text-decoration: underline; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${msg.attachment.name}</a>
+            <span style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">${msg.attachment.type.split('/')[1] || 'FILE'}</span>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  const messageText = msg.body ? `<div class="message-text">${msg.body}</div>` : '';
+
   wrapper.innerHTML = `
     <span class="message-sender-name">
       ${senderName} <span class="role-badge ${senderRole}" style="font-size:0.55rem; padding: 1px 4px;">${senderRole}</span>
     </span>
     <div class="message-bubble">
-      ${msg.body}
+      ${messageText}
+      ${attachmentHtml}
     </div>
     <div class="message-meta">
       <span>${formattedTime}</span>
@@ -584,17 +611,75 @@ function updateReadReceipts(messageId, reader) {
 }
 
 // Send Message
+// Attachment Selection & Trigger
+function triggerAttachmentSelect() {
+  document.getElementById('chat-attachment-input').click();
+}
+
+async function handleAttachmentSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const previewContainer = document.getElementById('attachment-preview-container');
+  const previewFilename = document.getElementById('preview-filename');
+
+  previewFilename.textContent = `Uploading: ${file.name}...`;
+  previewContainer.classList.remove('hidden');
+
+  const formData = new FormData();
+  formData.append('attachment', file);
+
+  try {
+    const response = await fetch('/api/chat/upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${currentToken}`
+      },
+      body: formData
+    });
+
+    const result = await response.json();
+    if (!result.success) {
+      throw new Error(result.error?.message || 'File upload failed');
+    }
+
+    pendingAttachment = {
+      url: result.data.url,
+      name: result.data.name,
+      type: result.data.type
+    };
+
+    previewFilename.textContent = `${file.name} (Ready)`;
+  } catch (error) {
+    alert(`Upload failed: ${error.message}`);
+    clearAttachmentPreview();
+  }
+}
+
+function clearAttachmentPreview() {
+  pendingAttachment = null;
+  document.getElementById('chat-attachment-input').value = '';
+  document.getElementById('attachment-preview-container').classList.add('hidden');
+}
+
+// Send Message
 function sendMessage(event) {
   event.preventDefault();
   if (!socket || !activeConversationId) return;
 
   const text = messageInput.value.trim();
-  if (!text) return;
+  if (!text && !pendingAttachment) return;
 
   const payload = {
     conversationId: activeConversationId,
-    body: text
+    body: text || ''
   };
+
+  if (pendingAttachment) {
+    payload.attachmentUrl = pendingAttachment.url;
+    payload.attachmentName = pendingAttachment.name;
+    payload.attachmentType = pendingAttachment.type;
+  }
 
   socket.emit('chat:message:send', payload);
 }

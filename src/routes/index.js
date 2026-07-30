@@ -8,6 +8,8 @@ const assignmentRoutes = require('../modules/assignments/assignment.routes');
 const dashboardRoutes = require('../modules/dashboard/dashboard.routes');
 const paymentRoutes = require('../modules/payment/payment.routes');
 const userEventsRoutes = require('../modules/events/user.events.routes');
+const chatRoutes = require('../modules/chat/chat.routes');
+const handbookRoutes = require('../modules/handbooks/handbook.routes');
 
 router.use('/admin/auth', adminAuthRoutes);
 router.use('/admin', adminUsersRoutes);
@@ -17,9 +19,7 @@ router.use('/assignments', assignmentRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/payment', paymentRoutes);
 router.use('/events', userEventsRoutes);
+router.use('/chat', chatRoutes);
+router.use('/handbooks', handbookRoutes);
 
 module.exports = router;
-
-
-
-

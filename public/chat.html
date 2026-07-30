@@ -169,8 +169,20 @@
 
           <!-- Message Input Bar -->
           <footer class="chat-input-bar">
+            <div id="attachment-preview-container" class="attachment-preview-container hidden">
+              <div class="preview-card">
+                <span class="preview-name" id="preview-filename">filename.jpg</span>
+                <button type="button" class="cancel-preview-btn" onclick="clearAttachmentPreview()">×</button>
+              </div>
+            </div>
             <form id="message-form" onsubmit="sendMessage(event)">
-              <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off" required maxlength="1000">
+              <input type="file" id="chat-attachment-input" style="display: none;" onchange="handleAttachmentSelect(event)">
+              <button type="button" id="attachment-trigger-btn" class="attachment-btn" onclick="triggerAttachmentSelect()" title="Attach image or document">
+                <svg viewBox="0 0 24 24" width="20" height="20">
+                  <path fill="currentColor" d="M16.5,6V17.5A4,4 0 0,1 12.5,21.5A4,4 0 0,1 8.5,17.5V5A2.5,2.5 0 0,1 11,2.5A2.5,2.5 0 0,1 13.5,5V15.5A1,1 0 0,1 12.5,16.5A1,1 0 0,1 11.5,15.5V6H10V15.5A2.5,2.5 0 0,0 12.5,18A2.5,2.5 0 0,0 15,15.5V5A4,4 0 0,0 11,1A4,4 0 0,0 7,5V17.5A5.5,5.5 0 0,0 12.5,23A5.5,5.5 0 0,0 18,17.5V6H16.5Z" />
+                </svg>
+              </button>
+              <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off" maxlength="1000">
               <button type="submit" class="send-btn">
                 <svg viewBox="0 0 24 24" width="24" height="24">
                   <path fill="currentColor" d="M2,21L23,12L2,3V10L17,12L2,14V21Z" />
