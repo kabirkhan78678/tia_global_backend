@@ -25,12 +25,12 @@ router.get(
   HandbookController.getAdminHandbooks
 );
 
-// Student Operations
+// Parent Operations
 router.get(
-  '/student',
+  '/parent',
   verifyToken,
-  authorizeRoles('student'),
-  HandbookController.getStudentHandbooks
+  authorizeRoles('parent'),
+  HandbookController.getParentHandbooks
 );
 
 module.exports = router;

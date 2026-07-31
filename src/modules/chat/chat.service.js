@@ -158,7 +158,9 @@ const formatConversationListItem = (row, authUser) => {
     lastMessage: row.last_message_id
       ? {
           id: row.last_message_id,
-          body: row.last_message_body,
+          body: (row.last_message_attachment_url && (!row.last_message_body || !row.last_message_body.trim()))
+            ? 'Sent an attachment'
+            : row.last_message_body,
           sender: {
             role: row.last_message_sender_role,
             id: row.last_message_sender_id,

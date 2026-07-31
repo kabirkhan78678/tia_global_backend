@@ -474,6 +474,7 @@ exports.findConversationList = async ({ authUser, limit, offset }) => {
         last_message.sender_role AS last_message_sender_role,
         last_message.sender_id AS last_message_sender_id,
         last_message.created_at AS last_message_created_at,
+        last_message.attachment_url AS last_message_attachment_url,
         read_cursor.last_read_message_id,
         (
           SELECT COUNT(*)

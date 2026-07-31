@@ -51,27 +51,55 @@ exports.getAdminHandbooks = async () => {
   return await HandbookModel.getAllHandbooks();
 };
 
-exports.getStudentHandbooks = async (studentId) => {
-  // 1. Get student profile details
-  const student = await AuthModel.findStudentById(studentId);
-  if (!student) {
-    throw new ApiError(404, 'Student profile not found');
+exports.getParentHandbooks = async (parentId, studentId = null) => {
+  // If a specific student ID is provided, retrieve for that child with strict checks
+  if (studentId) {
+    const student = await AuthModel.findStudentByParentIdAndStudentId({
+      parentId,
+      studentId,
+    });
+
+    if (!student) {
+      throw new ApiError(404, 'Student not found or not linked to this parent account');
+    }
+
+    if (student.status !== 'active') {
+      throw new ApiError(403, 'Student account is not active');
+    }
+
+    const gradeLevel = student.grade_level;
+    if (!gradeLevel) {
+      throw new ApiError(400, 'No grade level assigned to this student profile');
+    }
+
+    return await HandbookModel.getHandbooksByGrade(gradeLevel);
   }
 
-  // 2. Check if student has a paid invoice (outstanding fees check)
-  const isFeePaid = await PaymentModel.hasPaidInvoice(studentId);
-  if (!isFeePaid) {
-    throw new ApiError(
-      403,
-      'Access denied. Please complete your fee payment to view handbooks.'
-    );
+  // If no student ID is provided, retrieve for all linked active students
+  const students = await AuthModel.findStudentsByParentId(parentId);
+  if (!students || students.length === 0) {
+    return [];
   }
 
-  // 3. Fetch handbooks matching student's grade level
-  const gradeLevel = student.grade_level;
-  if (!gradeLevel) {
-    throw new ApiError(400, 'No grade level assigned to this student profile');
+  const allHandbooks = [];
+  const seenHandbookIds = new Set();
+
+  for (const student of students) {
+    if (student.status !== 'active') {
+      continue;
+    }
+
+    const gradeLevel = student.grade_level;
+    if (gradeLevel) {
+      const handbooks = await HandbookModel.getHandbooksByGrade(gradeLevel);
+      for (const h of handbooks) {
+        if (!seenHandbookIds.has(h.id)) {
+          seenHandbookIds.add(h.id);
+          allHandbooks.push(h);
+        }
+      }
+    }
   }
 
-  return await HandbookModel.getHandbooksByGrade(gradeLevel);
+  return allHandbooks;
 };

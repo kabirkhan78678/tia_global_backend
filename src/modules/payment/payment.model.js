@@ -284,6 +284,60 @@ exports.findPaidInvoiceByStudentId = async (studentId) => {
   return rows[0] || null;
 };
 
+exports.findPendingInvoicesByStudentId = async (studentId) => {
+  const [rows] = await pool.execute(
+    `
+    SELECT
+      inv.id,
+      inv.invoice_number,
+      inv.student_id,
+      inv.parent_id,
+      inv.grand_total,
+      inv.currency,
+      inv.invoice_status,
+      inv.generated_at,
+      s.first_name AS student_first_name,
+      s.last_name AS student_last_name,
+      u.email AS parent_email,
+      u.first_name AS parent_first_name,
+      u.last_name AS parent_last_name
+    FROM student_invoice inv
+    LEFT JOIN students s ON s.id = inv.student_id
+    LEFT JOIN users u ON u.id = inv.parent_id
+    WHERE inv.student_id = ? AND inv.invoice_status = 'pending'
+    `,
+    [studentId]
+  );
+  return rows;
+};
+
+exports.findPendingInvoicesByParentId = async (parentId) => {
+  const [rows] = await pool.execute(
+    `
+    SELECT
+      inv.id,
+      inv.invoice_number,
+      inv.student_id,
+      inv.parent_id,
+      inv.grand_total,
+      inv.currency,
+      inv.invoice_status,
+      inv.generated_at,
+      s.first_name AS student_first_name,
+      s.last_name AS student_last_name,
+      u.email AS parent_email,
+      u.first_name AS parent_first_name,
+      u.last_name AS parent_last_name
+    FROM student_invoice inv
+    LEFT JOIN students s ON s.id = inv.student_id
+    LEFT JOIN users u ON u.id = inv.parent_id
+    WHERE inv.parent_id = ? AND inv.invoice_status = 'pending'
+    `,
+    [parentId]
+  );
+  return rows;
+};
+
 exports.updateInvoiceStatus = async (invoiceId, status, paidAt = null) => {
   const [result] = await pool.execute(
     `

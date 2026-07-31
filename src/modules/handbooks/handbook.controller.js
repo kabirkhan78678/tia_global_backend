@@ -43,11 +43,12 @@ exports.getAdminHandbooks = async (req, res, next) => {
   }
 };
 
-exports.getStudentHandbooks = async (req, res, next) => {
+exports.getParentHandbooks = async (req, res, next) => {
   try {
-    // Student auth token payload contains student's ID in req.user.id
-    const studentId = req.user.id;
-    const handbooks = await HandbookService.getStudentHandbooks(studentId);
+    // Parent auth token payload contains parent's ID in req.user.id
+    const parentId = req.user.id;
+    const studentId = req.query.studentId ? Number(req.query.studentId) : null;
+    const handbooks = await HandbookService.getParentHandbooks(parentId, studentId);
     res.status(200).json({
       success: true,
       data: handbooks,

@@ -37,15 +37,15 @@ exports.getInvoiceById = async (req, res, next) => {
 
 exports.processPayment = async (req, res, next) => {
   try {
-    validatePayInput(req.body);
     const parentId = req.user.id;
     const result = await PaymentService.processPayment({
       invoice_id: req.body.invoice_id,
+      student_id: req.body.student_id,
       parent_id: parentId,
-      provider: req.body.provider,
-      payment_method: req.body.payment_method,
+      provider: req.body.provider || 'manual',
+      payment_method: req.body.payment_method || 'Credit Card',
     });
-    return res.status(200).json({ success: true, message: 'Payment initiated successfully', data: result });
+    return res.status(200).json({ success: true, message: 'Payment completed successfully', data: result });
   } catch (error) {
     return next(error);
   }
