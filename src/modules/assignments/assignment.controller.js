@@ -58,15 +58,19 @@ exports.deleteAssignment = async (req, res, next) => {
 exports.getTeacherAssignments = async (req, res, next) => {
   try {
     const teacherId = req.user.id;
-    const { grade_level } = req.query;
-    const assignments = await AssignmentService.getTeacherAssignments(
+    const { grade_level, page = 1, limit = 10, search } = req.query;
+    const result = await AssignmentService.getTeacherAssignments(
       teacherId,
-      grade_level
+      grade_level,
+      page,
+      limit,
+      search
     );
 
     return res.status(200).json({
       success: true,
-      data: assignments,
+      data: result.assignments,
+      pagination: result.pagination,
     });
   } catch (error) {
     return next(error);
@@ -76,7 +80,7 @@ exports.getTeacherAssignments = async (req, res, next) => {
 exports.getAssignmentById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const assignment = await AssignmentService.getAssignmentById(id, req.user);
+    const assignment = await AssignmentService.getAssignmentById(id, req.user, req.query);
 
     return res.status(200).json({
       success: true,
@@ -90,7 +94,8 @@ exports.getAssignmentById = async (req, res, next) => {
 exports.getStudentAssignments = async (req, res, next) => {
   try {
     const studentId = req.user.id;
-    const result = await AssignmentService.getStudentAssignments(studentId);
+    const { status } = req.query;
+    const result = await AssignmentService.getStudentAssignments(studentId, status);
 
     return res.status(200).json({
       success: true,
@@ -125,8 +130,8 @@ exports.submitAssignment = async (req, res, next) => {
 exports.getParentAssignments = async (req, res, next) => {
   try {
     const parentId = req.user.id;
-    const { studentId } = req.query;
-    const result = await AssignmentService.getParentAssignments(parentId, studentId);
+    const { studentId, status } = req.query;
+    const result = await AssignmentService.getParentAssignments(parentId, studentId, status);
 
     return res.status(200).json({
       success: true,
@@ -161,11 +166,29 @@ exports.getAssignmentSubmissions = async (req, res, next) => {
   try {
     const { id } = req.params;
     const teacherId = req.user.id;
-    const data = await AssignmentService.getAssignmentSubmissions(id, teacherId);
+    const { status, search } = req.query;
+    const data = await AssignmentService.getAssignmentSubmissions(id, teacherId, status, search);
 
     return res.status(200).json({
       success: true,
       data,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+exports.updateStudentAssignmentStatus = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const studentId = req.user.id;
+    const { status } = req.body;
+    const submission = await AssignmentService.updateStudentAssignmentStatus(id, studentId, status);
+
+    return res.status(200).json({
+      success: true,
+      message: `Assignment status updated to '${status}' successfully`,
+      data: submission,
     });
   } catch (error) {
     return next(error);

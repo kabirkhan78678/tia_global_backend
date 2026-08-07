@@ -1,6 +1,7 @@
 const InvoiceModel = require('./payment.model');
 const PaymentModel = require('./payment.model');
 const ManualPaymentProvider = require('../../services/manualPayment.provider');
+const StripePaymentProvider = require('../../services/stripePayment.provider');
 const ApiError = require('../../utils/apiError');
 const { sendPaymentSuccessEmail, sendReceiptEmail } = require('../../services/email.service');
 const AuthModel = require('../users/auth/auth.model');
@@ -10,6 +11,7 @@ class PaymentService {
     // Registry of available payment providers
     this.providers = new Map();
     this.registerProvider('manual', new ManualPaymentProvider());
+    this.registerProvider('stripe', new StripePaymentProvider());
   }
 
   /**

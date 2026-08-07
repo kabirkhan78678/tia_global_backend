@@ -15,6 +15,7 @@ const {
   getParentAssignments,
   gradeAssignment,
   getAssignmentSubmissions,
+  updateStudentAssignmentStatus,
 } = require('./assignment.controller');
 
 // Protect all routes with JWT verification
@@ -73,6 +74,13 @@ router.post(
   requireStudentPayment,
   uploadAssignmentFile.single('attachment'),
   submitAssignment
+);
+
+router.patch(
+  '/:id/status',
+  authorizeRoles('student'),
+  requireStudentPayment,
+  updateStudentAssignmentStatus
 );
 
 // Parent routes
