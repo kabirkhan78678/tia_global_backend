@@ -92,7 +92,7 @@ class InvoiceService {
 
     const invoice = await InvoiceModel.findInvoiceById(invoiceId);
 
-    // Send Invoice Generated email to parent asynchronously
+    // Send Invoice Generated email and Push & In-app notification to parent
     try {
       await sendInvoiceGeneratedEmail({
         to: parent.email,
@@ -103,8 +103,22 @@ class InvoiceService {
         currency: invoice.currency,
         dueDate: invoice.due_date,
       });
+
+      const NotificationService = require('../modules/notifications/notification.service');
+      NotificationService.notifyUser({
+        recipientId: parent.id,
+        recipientRole: 'parent',
+        title: 'Tuition Invoice Generated 📄',
+        body: `Invoice #${invoice.invoice_number} for ${student.first_name} (${invoice.currency} ${invoice.grand_total}) has been generated.`,
+        type: 'payment',
+        dataPayload: {
+          invoiceId: String(invoice.id),
+          invoiceNumber: String(invoice.invoice_number),
+          studentId: String(student.id),
+        },
+      }).catch((err) => console.error('[INVOICE_NOTIF_ERR]:', err.message));
     } catch (err) {
-      console.error('Invoice email generation error:', err.message);
+      console.error('Invoice notification error:', err.message);
     }
 
     return invoice;

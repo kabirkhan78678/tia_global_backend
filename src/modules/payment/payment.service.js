@@ -5,6 +5,7 @@ const StripePaymentProvider = require('../../services/stripePayment.provider');
 const ApiError = require('../../utils/apiError');
 const { sendPaymentSuccessEmail, sendReceiptEmail } = require('../../services/email.service');
 const AuthModel = require('../users/auth/auth.model');
+const NotificationService = require('../notifications/notification.service');
 
 class PaymentService {
   constructor() {
@@ -141,6 +142,19 @@ class PaymentService {
           paidAt: updatedInvoice.paid_at,
           items: invoice.items,
         });
+
+        // Send Push & In-App Notification to Parent
+        NotificationService.notifyUser({
+          recipientId: invoice.parent_id,
+          recipientRole: 'parent',
+          title: 'Payment Received! 💳',
+          body: `Payment of ${invoice.currency} ${invoice.grand_total} for ${invoice.student_first_name || 'your child'} was received successfully.`,
+          type: 'payment',
+          dataPayload: {
+            invoiceId: String(invoice.id),
+            invoiceNumber: String(invoice.invoice_number),
+          },
+        }).catch((err) => console.error('[PAYMENT_NOTIF_ERR]:', err.message));
       } catch (err) {
         console.error('Payment notification emails failed:', err.message);
       }
@@ -232,6 +246,19 @@ class PaymentService {
         paidAt: updatedInvoice.paid_at,
         items: invoice.items,
       });
+
+      // Send Push & In-App Notification to Parent
+      NotificationService.notifyUser({
+        recipientId: invoice.parent_id,
+        recipientRole: 'parent',
+        title: 'Payment Confirmed! 💳',
+        body: `Payment for invoice #${invoice.invoice_number} of ${invoice.currency} ${invoice.grand_total} for ${invoice.student_first_name || 'your child'} was confirmed. All features unlocked!`,
+        type: 'payment',
+        dataPayload: {
+          invoiceId: String(invoice.id),
+          invoiceNumber: String(invoice.invoice_number),
+        },
+      }).catch((err) => console.error('[PAYMENT_CONFIRM_NOTIF_ERR]:', err.message));
     } catch (err) {
       console.error('Payment notification emails failed:', err.message);
     }

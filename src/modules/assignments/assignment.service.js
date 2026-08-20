@@ -1,5 +1,6 @@
 const AssignmentModel = require('./assignment.model');
 const ApiError = require('../../utils/apiError');
+const NotificationService = require('../notifications/notification.service');
 
 const ALLOWED_GRADES = [
   'Pre-K',
@@ -107,6 +108,22 @@ exports.createAssignment = async (teacherId, data, file) => {
     book_cover_url,
     target_grade: target_grade ? target_grade.trim() : null,
   });
+
+  // Notify all students in this grade level and their parents
+  try {
+    const formattedDue = due_date ? new Date(due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : null;
+    NotificationService.notifyGradeStudentsAndParents(grade_level, {
+      title: `New Assignment: ${title.trim()}`,
+      body: `A new ${subject ? `${subject} ` : ''}assignment "${title.trim()}" has been assigned${formattedDue ? ` (Due: ${formattedDue})` : ''}.`,
+      type: 'assignment',
+      dataPayload: {
+        assignmentId: String(assignmentId),
+        gradeLevel: String(grade_level),
+      },
+    }).catch((err) => console.error('[ASSIGNMENT_CREATE_NOTIF_ERROR]:', err.message));
+  } catch (err) {
+    console.error('[ASSIGNMENT_CREATE_NOTIF_ERROR]:', err.message);
+  }
 
   return await AssignmentModel.findAssignmentById(assignmentId);
 };
@@ -462,6 +479,25 @@ exports.gradeAssignment = async (assignmentId, teacherId, body) => {
     graded_by: teacherId,
   });
 
+  // Notify student and linked parent
+  try {
+    const scoreText = parsedMarks !== null ? ` Score: ${parsedMarks}/${assignment.total_points}` : '';
+    const gradeText = grade ? ` (Grade: ${grade})` : '';
+    NotificationService.notifyUser({
+      recipientId: student.id,
+      recipientRole: 'student',
+      title: `Assignment Graded: ${assignment.title}`,
+      body: `Your assignment "${assignment.title}" has been graded.${scoreText}${gradeText}`,
+      type: 'assignment',
+      dataPayload: {
+        assignmentId: String(assignmentId),
+        studentId: String(student.id),
+      },
+    }).catch((err) => console.error('[GRADE_STUDENT_NOTIF_ERR]:', err.message));
+  } catch (err) {
+    console.error('[GRADE_NOTIF_ERROR]:', err.message);
+  }
+
   return await AssignmentModel.findSingleSubmission(assignmentId, student.id);
 };
 
@@ -568,6 +604,25 @@ exports.updateStudentAssignmentStatus = async (assignmentId, studentId, status) 
     attachment_url: existingSubmission ? existingSubmission.attachment_url : null,
     status: dbStatus,
   });
+
+  // If student marked as completed, notify teacher
+  if (dbStatus === 'submitted') {
+    try {
+      NotificationService.notifyUser({
+        recipientId: assignment.teacher_id,
+        recipientRole: 'teacher',
+        title: `Assignment Submitted: ${assignment.title}`,
+        body: `${student.first_name} ${student.last_name} marked assignment "${assignment.title}" as completed.`,
+        type: 'assignment',
+        dataPayload: {
+          assignmentId: String(assignmentId),
+          studentId: String(studentId),
+        },
+      }).catch((err) => console.error('[SUBMIT_TEACHER_NOTIF_ERR]:', err.message));
+    } catch (err) {
+      console.error('[SUBMIT_TEACHER_NOTIF_ERROR]:', err.message);
+    }
+  }
 
   return await AssignmentModel.findSingleSubmission(assignmentId, studentId);
 };

@@ -5,6 +5,7 @@ const ApiError = require('../../../utils/apiError');
 const AdminUsersModel = require('./admin.users.model');
 const InvoiceService = require('../../../services/invoice.service');
 const { sendStudentApprovedEmail } = require('../../../services/email.service');
+const NotificationService = require('../../notifications/notification.service');
 
 const ALLOWED_ROLES = ['parent', 'teacher'];
 const ALLOWED_APPROVAL_STATUSES = ['pending', 'active', 'inactive'];
@@ -162,6 +163,26 @@ const updateApprovalStatus = async ({ userId, role, status }) => {
     await activateParentChildren(userId);
   }
 
+  // Send push & in-app notification to the approved/updated user
+  try {
+    NotificationService.notifyUser({
+      recipientId: userId,
+      recipientRole: role,
+      title: status === 'active' ? 'Account Approved! 🎉' : `Account Status: ${status.toUpperCase()}`,
+      body: status === 'active'
+        ? `Your ${role} account has been approved by the Admin. You can now access all portal features!`
+        : `Your ${role} account status has been updated to ${status}.`,
+      type: 'approval',
+      dataPayload: {
+        userId: String(userId),
+        role: String(role),
+        status: String(status),
+      },
+    }).catch((err) => console.error('[USER_APPROVAL_NOTIF_ERR]:', err.message));
+  } catch (err) {
+    console.error('[APPROVAL_NOTIF_ERR]:', err.message);
+  }
+
   return {
     message: `${role} ${status} successfully`,
   };
@@ -192,6 +213,25 @@ const updateParentStatus = async ({ parentId, status }) => {
 
   if (status === 'active') {
     await activateParentChildren(parentId);
+  }
+
+  // Send push & in-app notification to parent
+  try {
+    NotificationService.notifyUser({
+      recipientId: parentId,
+      recipientRole: 'parent',
+      title: status === 'active' ? 'Parent Account Approved! 🎉' : `Account Status: ${status.toUpperCase()}`,
+      body: status === 'active'
+        ? 'Your parent account has been approved by the Admin. Welcome to Tia Global!'
+        : `Your parent account status has been updated to ${status}.`,
+      type: 'approval',
+      dataPayload: {
+        parentId: String(parentId),
+        status: String(status),
+      },
+    }).catch((err) => console.error('[PARENT_APPROVAL_NOTIF_ERR]:', err.message));
+  } catch (err) {
+    console.error('[PARENT_NOTIF_ERR]:', err.message);
   }
 
   return {
@@ -244,6 +284,23 @@ const updateStudentStatus = async ({ studentId, status }) => {
         role: 'parent',
         status: 'active',
       });
+    }
+
+    // Send push & in-app notification to student
+    try {
+      NotificationService.notifyUser({
+        recipientId: studentId,
+        recipientRole: 'student',
+        title: 'Student Account Activated! 🎉',
+        body: `Welcome ${student.first_name}! Your student account is now active. Check your email for login credentials.`,
+        type: 'approval',
+        dataPayload: {
+          studentId: String(studentId),
+          status: 'active',
+        },
+      }).catch((err) => console.error('[STUDENT_APPROVAL_NOTIF_ERR]:', err.message));
+    } catch (err) {
+      console.error('[STUDENT_NOTIF_ERR]:', err.message);
     }
 
     return {

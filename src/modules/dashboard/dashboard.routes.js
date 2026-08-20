@@ -15,6 +15,10 @@ router.get(
   '/admin',
   getAdminDashboard
 );
+router.post(
+  '/admin',
+  getAdminDashboard
+);
 
 // Protect other dashboard routes with token verification
 router.use(verifyToken);

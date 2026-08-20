@@ -10,6 +10,7 @@ const paymentRoutes = require('../modules/payment/payment.routes');
 const userEventsRoutes = require('../modules/events/user.events.routes');
 const chatRoutes = require('../modules/chat/chat.routes');
 const handbookRoutes = require('../modules/handbooks/handbook.routes');
+const notificationRoutes = require('../modules/notifications/notification.routes');
 
 router.use('/admin/auth', adminAuthRoutes);
 router.use('/admin', adminUsersRoutes);
@@ -21,5 +22,6 @@ router.use('/payment', paymentRoutes);
 router.use('/events', userEventsRoutes);
 router.use('/chat', chatRoutes);
 router.use('/handbooks', handbookRoutes);
+router.use('/notifications', notificationRoutes);
 
 module.exports = router;

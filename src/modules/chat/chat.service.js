@@ -1,5 +1,6 @@
 const ApiError = require('../../utils/apiError');
 const ChatModel = require('./chat.model');
+const NotificationService = require('../notifications/notification.service');
 const {
   MAX_MESSAGE_LENGTH,
   VALID_RECIPIENT_ROLES,
@@ -488,6 +489,49 @@ const sendMessage = async ({ authUser, payload = {} }) => {
   });
 
   const message = await ChatModel.findMessageById(messageId);
+
+  // Send real-time and push notification to recipient
+  try {
+    const isTeacherSender = authUser.role === 'teacher';
+    let recipientRole;
+    let recipientId;
+
+    if (isTeacherSender) {
+      if (conversation.conversation_type === 'parent_teacher') {
+        recipientRole = 'parent';
+        recipientId = conversation.parent_id;
+      } else {
+        recipientRole = 'student';
+        recipientId = conversation.student_id;
+      }
+    } else {
+      recipientRole = 'teacher';
+      recipientId = conversation.teacher_id;
+    }
+
+    const senderName = authUser.firstName
+      ? `${authUser.firstName} ${authUser.lastName || ''}`.trim()
+      : `${authUser.first_name || ''} ${authUser.last_name || ''}`.trim() || 'Someone';
+
+    const notifBody = body
+      ? (body.length > 80 ? body.substring(0, 77) + '...' : body)
+      : 'Sent an attachment';
+
+    NotificationService.notifyUser({
+      recipientId,
+      recipientRole,
+      title: `New message from ${senderName || 'Chat'}`,
+      body: notifBody,
+      type: 'chat',
+      dataPayload: {
+        conversationId: String(conversation.id),
+        senderId: String(authUser.id),
+        senderRole: String(authUser.role),
+      },
+    }).catch((err) => console.error('[CHAT_NOTIF_ERROR]:', err.message));
+  } catch (err) {
+    console.error('[CHAT_NOTIF_TRIGGER_ERROR]:', err.message);
+  }
 
   return {
     conversation: await formatConversation(conversation),

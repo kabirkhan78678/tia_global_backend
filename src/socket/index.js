@@ -3,6 +3,7 @@ const { Server } = require('socket.io');
 
 const env = require('../config/env');
 const registerChatSocket = require('../modules/chat/chat.socket');
+const { setNotificationIo } = require('../modules/notifications/notification.service');
 
 const extractBearerToken = (socket) => {
   const authToken = socket.handshake.auth && socket.handshake.auth.token;
@@ -28,13 +29,35 @@ const authenticateSocket = (socket, next) => {
       return next(new Error('Authorization token is required'));
     }
 
-    socket.user = jwt.verify(token, process.env.JWT_SECRET);
-
-    if (!socket.user || !socket.user.id || !socket.user.role) {
-      return next(new Error('Invalid token payload'));
+    // Try standard user token verification
+    try {
+      const decodedUser = jwt.verify(token, process.env.JWT_SECRET);
+      if (decodedUser && decodedUser.id && decodedUser.role) {
+        socket.user = decodedUser;
+        return next();
+      }
+    } catch {
+      // User token failed, try Admin token
     }
 
-    return next();
+    // Try Admin token verification
+    if (env.admin && env.admin.jwtSecret) {
+      try {
+        const decodedAdmin = jwt.verify(token, env.admin.jwtSecret);
+        if (decodedAdmin && (decodedAdmin.type === 'admin' || decodedAdmin.role === 'admin')) {
+          socket.user = {
+            id: decodedAdmin.id,
+            role: 'admin',
+            email: decodedAdmin.email,
+          };
+          return next();
+        }
+      } catch {
+        // Admin token failed
+      }
+    }
+
+    return next(new Error('Invalid or expired token'));
   } catch (error) {
     return next(new Error('Invalid or expired token'));
   }
@@ -50,8 +73,15 @@ const initializeSocket = (httpServer) => {
 
   io.use(authenticateSocket);
 
+  // Set global IO reference for notification service
+  setNotificationIo(io);
+
   io.on('connection', (socket) => {
     const user = socket.user;
+
+    // Join personal notification room & role room
+    socket.join(`notification:${user.role}:${user.id}`);
+    socket.join(`role:${user.role}`);
 
     if (env.debug) {
       console.log(
@@ -88,3 +118,4 @@ const initializeSocket = (httpServer) => {
 };
 
 module.exports = initializeSocket;
+

@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 
 const AuthModel = require('./auth.model');
 const ApiError = require('../../../utils/apiError');
+const NotificationService = require('../../notifications/notification.service');
 const {
   sendParentWelcomeEmail,
   sendPasswordResetLinkEmail,
@@ -160,6 +161,22 @@ const signupParent = async (payload) => {
     })
   );
 
+  // Notify all Admins about new parent registration
+  try {
+    const studentCount = (payload.students || []).length;
+    NotificationService.notifyRole('admin', {
+      title: 'New Parent Registration 📋',
+      body: `${payload.firstName} ${payload.lastName} registered with ${studentCount} student(s) and is pending approval.`,
+      type: 'approval',
+      dataPayload: {
+        parentId: String(parentId),
+        parentEmail: String(payload.email),
+      },
+    }).catch((err) => console.error('[ADMIN_NEW_PARENT_NOTIF_ERR]:', err.message));
+  } catch (err) {
+    console.error('[ADMIN_NOTIF_ERROR]:', err.message);
+  }
+
   return {
     message: 'Registration submitted successfully',
   };
@@ -195,6 +212,21 @@ const signupTeacher = async (payload) => {
       teachingGrade: payload.teachingGrade,
     })
   );
+
+  // Notify all Admins about new teacher registration
+  try {
+    NotificationService.notifyRole('admin', {
+      title: 'New Teacher Registration 📋',
+      body: `${payload.firstName} ${payload.lastName} registered as a Teacher (${payload.teachingGrade}) and is pending approval.`,
+      type: 'approval',
+      dataPayload: {
+        teacherId: String(teacherId),
+        teacherEmail: String(payload.email),
+      },
+    }).catch((err) => console.error('[ADMIN_NEW_TEACHER_NOTIF_ERR]:', err.message));
+  } catch (err) {
+    console.error('[ADMIN_NOTIF_ERROR]:', err.message);
+  }
 
   return {
     message: 'Teacher registered successfully',

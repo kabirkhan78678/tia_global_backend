@@ -1,5 +1,6 @@
 const ApiError = require('../../../utils/apiError');
 const AdminEventsModel = require('./admin.events.model');
+const NotificationService = require('../../notifications/notification.service');
 
 const ALLOWED_CATEGORIES = ['ALL', 'TEACHER', 'STUDENT', 'PARENT'];
 
@@ -91,6 +92,36 @@ const invalidCategories = categories.filter(
         grade,
       });
     }
+  }
+
+  // Trigger real-time & push notifications for target groups
+  try {
+    const formattedDate = eventDate ? new Date(eventDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+    const notifBody = `${title.trim()} has been scheduled for ${formattedDate}${eventTime ? ` at ${eventTime}` : ''}.`;
+
+    if (categories.includes('ALL')) {
+      NotificationService.notifyRole('parent', { title: `New Event: ${title.trim()} 📅`, body: notifBody, type: 'event', dataPayload: { eventId: String(eventId) } }).catch(() => {});
+      NotificationService.notifyRole('teacher', { title: `New Event: ${title.trim()} 📅`, body: notifBody, type: 'event', dataPayload: { eventId: String(eventId) } }).catch(() => {});
+      NotificationService.notifyRole('student', { title: `New Event: ${title.trim()} 📅`, body: notifBody, type: 'event', dataPayload: { eventId: String(eventId) } }).catch(() => {});
+    } else {
+      if (categories.includes('PARENT')) {
+        NotificationService.notifyRole('parent', { title: `New Event: ${title.trim()} 📅`, body: notifBody, type: 'event', dataPayload: { eventId: String(eventId) } }).catch(() => {});
+      }
+      if (categories.includes('TEACHER')) {
+        NotificationService.notifyRole('teacher', { title: `New Event: ${title.trim()} 📅`, body: notifBody, type: 'event', dataPayload: { eventId: String(eventId) } }).catch(() => {});
+      }
+      if (categories.includes('STUDENT')) {
+        if (Array.isArray(grades) && grades.length > 0) {
+          for (const g of grades) {
+            NotificationService.notifyGradeStudentsAndParents(g, { title: `New Event: ${title.trim()} 📅`, body: notifBody, type: 'event', dataPayload: { eventId: String(eventId) } }).catch(() => {});
+          }
+        } else {
+          NotificationService.notifyRole('student', { title: `New Event: ${title.trim()} 📅`, body: notifBody, type: 'event', dataPayload: { eventId: String(eventId) } }).catch(() => {});
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[EVENT_NOTIF_ERROR]:', err.message);
   }
 
   return {
