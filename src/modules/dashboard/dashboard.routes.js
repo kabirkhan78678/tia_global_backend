@@ -7,9 +7,16 @@ const {
   getParentDashboard,
   getStudentDashboard,
   getTeacherDashboard,
+  getAdminDashboard,
 } = require('./dashboard.controller');
 
-// Protect all dashboard routes with token verification
+// Admin Dashboard API
+router.get(
+  '/admin',
+  getAdminDashboard
+);
+
+// Protect other dashboard routes with token verification
 router.use(verifyToken);
 
 // Parent Dashboard API

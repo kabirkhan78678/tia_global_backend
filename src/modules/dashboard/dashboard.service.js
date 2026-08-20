@@ -29,7 +29,7 @@ const formatDashboardEvents = async (rawEvents) => {
 /**
  * Get Parent Dashboard Data
  */
-exports.getParentDashboard = async (parentId) => {
+exports.getParentDashboard = async (parentId, requestedStudentId = null) => {
   const children = await DashboardModel.getParentLinkedChildren(parentId);
 
   let totalAssignments = 0;
@@ -38,13 +38,41 @@ exports.getParentDashboard = async (parentId) => {
   let recentAssignments = [];
   let weeklyProgress = { scale_max: 500, current_score: 0, daily_breakdown: [] };
   let primaryStudentGrade = null;
+  let selectedStudent = null;
 
   if (children && children.length > 0) {
-    const firstChild = children[0];
-    primaryStudentGrade = firstChild.grade_level;
+    let targetChildren = children;
 
-    // Aggregate statistics across linked children
-    for (const child of children) {
+    if (requestedStudentId) {
+      const parsedStudentId = parseInt(requestedStudentId, 10);
+      const matchedChild = children.find((c) => c.id === parsedStudentId);
+
+      if (!matchedChild) {
+        throw new ApiError(403, 'Requested student is not linked to your parent account');
+      }
+
+      targetChildren = [matchedChild];
+      selectedStudent = {
+        id: matchedChild.id,
+        name: `${matchedChild.first_name} ${matchedChild.last_name}`,
+        grade_level: matchedChild.grade_level,
+        profile_image: matchedChild.profile_image,
+      };
+    } else {
+      // Default to first child if no specific student requested
+      selectedStudent = {
+        id: children[0].id,
+        name: `${children[0].first_name} ${children[0].last_name}`,
+        grade_level: children[0].grade_level,
+        profile_image: children[0].profile_image,
+      };
+    }
+
+    const primaryChild = targetChildren[0];
+    primaryStudentGrade = primaryChild.grade_level;
+
+    // Aggregate statistics across target children (either single selected or all)
+    for (const child of targetChildren) {
       if (child.grade_level) {
         const stats = await DashboardModel.getStudentAssignmentStats(child.id, child.grade_level);
         totalAssignments += stats.total_assignments;
@@ -62,8 +90,10 @@ exports.getParentDashboard = async (parentId) => {
       }
     }
 
-    // Get weekly progress for primary child
-    weeklyProgress = await DashboardModel.getStudentWeeklyProgress(firstChild.id, firstChild.grade_level);
+    // Get weekly progress for the primary child
+    if (primaryChild.grade_level) {
+      weeklyProgress = await DashboardModel.getStudentWeeklyProgress(primaryChild.id, primaryChild.grade_level);
+    }
   }
 
   // Get upcoming events for PARENT or linked child's grade
@@ -71,6 +101,7 @@ exports.getParentDashboard = async (parentId) => {
   const upcomingEvents = await formatDashboardEvents(upcomingEventsRaw);
 
   return {
+    selected_student: selectedStudent,
     weekly_progress: weeklyProgress,
     stats: {
       outstanding_balance: "$0.00",

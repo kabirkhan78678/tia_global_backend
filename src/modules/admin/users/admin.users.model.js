@@ -186,3 +186,55 @@ exports.findStudentsByParentId = async (parentId) => {
   return rows;
 };
 
+exports.getAdminDashboardStats = async () => {
+  const [studentRows] = await pool.query(
+    `SELECT COUNT(id) AS total FROM students`
+  );
+
+  const [teacherRows] = await pool.query(
+    `SELECT COUNT(id) AS total FROM users WHERE role = 'teacher'`
+  );
+
+  const [upcomingEventRows] = await pool.query(
+    `SELECT COUNT(id) AS total FROM events WHERE deleted_at IS NULL AND event_date >= CURDATE()`
+  );
+
+  const [announcementRows] = await pool.query(
+    `SELECT COUNT(id) AS total FROM events WHERE deleted_at IS NULL`
+  );
+
+  return {
+    total_students: parseInt(studentRows[0]?.total || 0, 10),
+    total_teachers: parseInt(teacherRows[0]?.total || 0, 10),
+    upcoming_events: parseInt(upcomingEventRows[0]?.total || 0, 10),
+    announcements: parseInt(announcementRows[0]?.total || 0, 10),
+  };
+};
+
+exports.getRecentApplications = async (limit = 10) => {
+  const safeLimit = Number.isInteger(Number(limit)) && Number(limit) > 0 ? Number(limit) : 10;
+  const [rows] = await pool.query(
+    `
+    SELECT
+      u.id AS parent_id,
+      u.first_name AS parent_first_name,
+      u.last_name AS parent_last_name,
+      u.email,
+      u.phone,
+      u.profile_image AS parent_profile_image,
+      u.approval_status AS status,
+      u.created_at,
+      COUNT(ps.student_id) AS total_child
+    FROM users u
+    LEFT JOIN parent_students ps ON ps.parent_id = u.id
+    WHERE u.role = 'parent'
+    GROUP BY u.id, u.first_name, u.last_name, u.email, u.phone, u.profile_image, u.approval_status, u.created_at
+    ORDER BY u.created_at DESC
+    LIMIT ${safeLimit}
+    `
+  );
+
+  return rows;
+};
+
+

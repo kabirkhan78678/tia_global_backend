@@ -258,10 +258,71 @@ const updateStudentStatus = async ({ studentId, status }) => {
   };
 };
 
+const getAdminDashboard = async (adminUser = {}) => {
+  const stats = await AdminUsersModel.getAdminDashboardStats();
+  const rawApplications = await AdminUsersModel.getRecentApplications(10);
+
+  const formattedApplications = [];
+
+  for (let i = 0; i < rawApplications.length; i++) {
+    const app = rawApplications[i];
+    const students = await AdminUsersModel.findStudentsByParentId(app.parent_id);
+
+    const formattedStudents = students.map((s) => ({
+      id: s.id,
+      name: `${s.first_name || ''} ${s.last_name || ''}`.trim(),
+      firstName: s.first_name,
+      lastName: s.last_name,
+      dob: s.dob,
+      gradeLevel: s.grade_level,
+      academy: s.academy,
+      email: s.email,
+      status: s.status,
+      profileImage: s.profile_image,
+    }));
+
+    const dateObj = new Date(app.created_at);
+    const formattedDate = !isNaN(dateObj)
+      ? dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      : null;
+
+    formattedApplications.push({
+      s_no: i + 1,
+      parent_id: app.parent_id,
+      parent_name: `${app.parent_first_name || ''} ${app.parent_last_name || ''}`.trim(),
+      email: app.email,
+      phone: app.phone,
+      profile_image: app.parent_profile_image,
+      total_child: parseInt(app.total_child || formattedStudents.length, 10),
+      status: (app.status || 'pending').toUpperCase(),
+      raw_status: app.status || 'pending',
+      date: app.created_at,
+      formatted_date: formattedDate,
+      students: formattedStudents,
+    });
+  }
+
+  return {
+    admin_info: {
+      name: adminUser?.name || 'Tia Global',
+      email: adminUser?.email || '',
+      role: 'admin',
+    },
+    stats: {
+      total_students: stats.total_students,
+      total_teachers: stats.total_teachers,
+      upcoming_events: stats.upcoming_events,
+      announcements: stats.announcements,
+    },
+    recent_applications: formattedApplications,
+  };
+};
+
 module.exports = {
   getParents,
   getTeachers,
   updateApprovalStatus,
   updateParentStatus,
   updateStudentStatus,
+  getAdminDashboard,
 };

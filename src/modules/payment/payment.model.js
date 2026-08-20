@@ -66,21 +66,6 @@ exports.findTransactionById = async (transactionId) => {
   return rows[0] || null;
 };
 
-exports.findTransactionByReference = async (reference) => {
-  if (!reference) return null;
-  const [rows] = await pool.execute(
-    `
-    SELECT id, invoice_id, student_id, parent_id, provider, transaction_reference,
-           payment_status, amount, currency, payment_date, gateway_response, created_at
-    FROM payment_transactions
-    WHERE transaction_reference = ?
-    LIMIT 1
-    `,
-    [reference]
-  );
-  return rows[0] || null;
-};
-
 exports.findPaymentHistoryByParentId = async (parentId) => {
   const [rows] = await pool.execute(
     `

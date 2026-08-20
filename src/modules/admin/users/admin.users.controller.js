@@ -75,10 +75,25 @@ const updateStudentStatus = async (req, res, next) => {
   }
 };
 
+const getAdminDashboard = async (req, res, next) => {
+  try {
+    const adminUser = req.admin || req.user || {};
+    const data = await adminUsersService.getAdminDashboard(adminUser);
+
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 module.exports = {
   getParents,
   getTeachers,
   updateApprovalStatus,
   updateParentStatus,
   updateStudentStatus,
+  getAdminDashboard,
 };

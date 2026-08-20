@@ -2,7 +2,6 @@ const InvoiceService = require('../../services/invoice.service');
 const PaymentService = require('./payment.service');
 const FeePlanConfigService = require('../../services/feePlanConfig.service');
 const FeePlanModel = require('./payment.model');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const {
   validatePayInput,
   validateManualConfirmInput,
@@ -44,20 +43,8 @@ exports.processPayment = async (req, res, next) => {
       student_id: req.body.student_id,
       parent_id: parentId,
       provider: req.body.provider || 'manual',
-      payment_method: req.body.payment_method,
+      payment_method: req.body.payment_method || 'Credit Card',
     });
-
-    if (req.body.provider === 'stripe') {
-      return res.status(200).json({
-        success: true,
-        message: 'Checkout session created',
-        data: {
-          session_id: result.sessionId,
-          checkout_url: result.checkoutUrl,
-        },
-      });
-    }
-
     return res.status(200).json({ success: true, message: 'Payment completed successfully', data: result });
   } catch (error) {
     return next(error);
@@ -75,56 +62,6 @@ exports.confirmManualPayment = async (req, res, next) => {
     });
     return res.status(200).json({ success: true, message: result.message, data: result });
   } catch (error) {
-    return next(error);
-  }
-};
-
-exports.stripeWebhookHandler = async (req, res, next) => {
-  const signature = req.headers['stripe-signature'];
-  let event;
-
-  try {
-    event = stripe.webhooks.constructEvent(
-      req.body,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET
-    );
-  } catch (err) {
-    console.error('Stripe Webhook Signature Verification Failed:', err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
-
-  try {
-    const sessionOrIntent = event.data.object;
-    console.log(`[Stripe Webhook] Received event of type: ${event.type}`);
-
-    if (event.type === 'checkout.session.completed') {
-      const metadata = sessionOrIntent.metadata || {};
-      await PaymentService.handleStripeWebhookSuccess({
-        invoice_id: metadata.invoice_id,
-        parent_id: metadata.parent_id,
-        student_id: metadata.student_id,
-        session_id: sessionOrIntent.id,
-        payment_intent_id: sessionOrIntent.payment_intent,
-        gateway_response: sessionOrIntent,
-      });
-    } else if (event.type === 'payment_intent.succeeded') {
-      const metadata = sessionOrIntent.metadata || {};
-      await PaymentService.handleStripeWebhookSuccess({
-        invoice_id: metadata.invoice_id,
-        parent_id: metadata.parent_id,
-        student_id: metadata.student_id,
-        session_id: null,
-        payment_intent_id: sessionOrIntent.id,
-        gateway_response: sessionOrIntent,
-      });
-    } else if (event.type === 'checkout.session.expired') {
-      console.warn(`[Stripe Webhook] Checkout session ${sessionOrIntent.id} expired without successful payment.`);
-    }
-
-    return res.status(200).json({ received: true });
-  } catch (error) {
-    console.error('[Stripe Webhook Error]:', error);
     return next(error);
   }
 };

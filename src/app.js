@@ -28,14 +28,6 @@ app.use(
 
 app.use(cors());
 
-// Stripe Webhook Endpoint needs raw body BEFORE express.json()
-const { stripeWebhookHandler } = require("./modules/payment/payment.controller");
-app.post(
-  "/api/payment/stripe/webhook",
-  express.raw({ type: "application/json" }),
-  stripeWebhookHandler
-);
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

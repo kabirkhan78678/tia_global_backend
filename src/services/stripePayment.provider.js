@@ -8,84 +8,84 @@ class StripePaymentProvider extends PaymentProviderInterface {
   }
 
   /**
-   * Process Stripe Checkout Session creation
+   * Process stripe payment
    */
-  async processPayment({ invoices, amount, currency = 'USD', parentId, studentId, frontendUrl }) {
+  async processPayment({ invoice, amount, currency = 'USD', paymentMethod }) {
     try {
+      // Determine the payment method ID or token to use:
+      // If paymentMethod is passed and starts with pm_ or tok_, use it.
+      // Otherwise, fallback to the default Stripe test card pm_card_visa.
+      let stripePaymentMethod = 'pm_card_visa';
+      if (paymentMethod && (paymentMethod.startsWith('pm_') || paymentMethod.startsWith('tok_'))) {
+        stripePaymentMethod = paymentMethod;
+      }
+
       // Stripe requires amount in cents/smallest currency unit
       const stripeAmount = Math.round(amount * 100);
 
-      let invoiceName;
-      let invoiceIds;
-      
-      if (Array.isArray(invoices)) {
-        invoiceIds = invoices.map(inv => inv.id).join(',');
-        invoiceName = invoices.length === 1
-          ? `Invoice #${invoices[0].invoice_number}`
-          : `Tuition Fee (Invoices: ${invoices.map(inv => inv.invoice_number).join(', ')})`;
-      } else {
-        invoiceIds = invoices.id.toString();
-        invoiceName = `Invoice #${invoices.invoice_number}`;
-      }
-
-      // Create Stripe Checkout Session
-      const session = await stripe.checkout.sessions.create({
-        mode: 'payment',
-        line_items: [
-          {
-            price_data: {
-              currency: currency.toLowerCase(),
-              product_data: {
-                name: invoiceName,
-              },
-              unit_amount: stripeAmount,
-            },
-            quantity: 1,
-          },
-        ],
-        success_url: `${frontendUrl}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${frontendUrl}/payment/cancel`,
-        metadata: {
-          invoice_id: invoiceIds,
-          parent_id: parentId.toString(),
-          student_id: studentId ? studentId.toString() : '',
+      // Create and confirm the PaymentIntent immediately.
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: stripeAmount,
+        currency: currency.toLowerCase(),
+        payment_method: stripePaymentMethod,
+        confirm: true,
+        automatic_payment_methods: {
+          enabled: true,
+          allow_redirects: 'never'
         },
+        metadata: {
+          invoice_id: invoice.id,
+          invoice_number: invoice.invoice_number,
+          student_id: invoice.student_id,
+          parent_id: invoice.parent_id,
+        }
       });
+
+      if (paymentIntent.status !== 'succeeded') {
+        throw new ApiError(400, `Stripe payment intent status: ${paymentIntent.status}`);
+      }
 
       return {
         provider: this.name,
-        sessionId: session.id,
-        checkoutUrl: session.url,
-        status: 'pending',
+        transactionReference: paymentIntent.id,
+        status: 'success',
+        amount,
+        currency,
+        meta: {
+          paymentIntentId: paymentIntent.id,
+          paymentMethodId: paymentIntent.payment_method,
+          chargeId: paymentIntent.latest_charge,
+          receiptUrl: paymentIntent.charges?.data?.[0]?.receipt_url || null,
+        }
       };
     } catch (error) {
-      console.error('Stripe Checkout Session Creation Failed:', error);
+      console.error('Stripe Payment Processing Failed:', error);
       throw new ApiError(400, `Stripe Error: ${error.message}`);
     }
   }
 
   /**
-   * Confirm Stripe payment (Retrieves Checkout Session)
+   * Confirm Stripe payment
    */
   async confirmPayment({ transactionReference }) {
     try {
-      const session = await stripe.checkout.sessions.retrieve(transactionReference);
-      if (session.payment_status === 'paid') {
+      const paymentIntent = await stripe.paymentIntents.retrieve(transactionReference);
+      if (paymentIntent.status === 'succeeded') {
         return {
           success: true,
           transactionReference,
           status: 'success',
-          gatewayResponse: session
+          gatewayResponse: paymentIntent
         };
       }
       return {
         success: false,
         transactionReference,
-        status: session.payment_status,
-        gatewayResponse: session
+        status: paymentIntent.status,
+        gatewayResponse: paymentIntent
       };
     } catch (error) {
-      console.error('Stripe Checkout Confirmation Failed:', error);
+      console.error('Stripe Payment Confirmation Failed:', error);
       throw new ApiError(400, `Stripe confirmation error: ${error.message}`);
     }
   }

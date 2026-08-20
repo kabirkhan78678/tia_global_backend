@@ -4,7 +4,7 @@ const { pool } = require('../../config/db');
  * Get linked children for a parent
  */
 exports.getParentLinkedChildren = async (parentId) => {
-  const [rows] = await pool.execute(
+  const [rows] = await pool.query(
     `
     SELECT
       s.id,
@@ -29,7 +29,7 @@ exports.getParentLinkedChildren = async (parentId) => {
  * Get student details by ID
  */
 exports.getStudentById = async (studentId) => {
-  const [rows] = await pool.execute(
+  const [rows] = await pool.query(
     `
     SELECT id, first_name, last_name, email, grade_level, academy, status, profile_image
     FROM students
@@ -46,7 +46,7 @@ exports.getStudentById = async (studentId) => {
  * Get assignment stats for a student
  */
 exports.getStudentAssignmentStats = async (studentId, gradeLevel) => {
-  const [rows] = await pool.execute(
+  const [rows] = await pool.query(
     `
     SELECT
       COUNT(a.id) AS total_assignments,
@@ -72,7 +72,8 @@ exports.getStudentAssignmentStats = async (studentId, gradeLevel) => {
  * Get recent assignments for a student
  */
 exports.getStudentRecentAssignments = async (studentId, gradeLevel, limit = 5) => {
-  const [rows] = await pool.execute(
+  const safeLimit = Number.isInteger(Number(limit)) && Number(limit) > 0 ? Number(limit) : 5;
+  const [rows] = await pool.query(
     `
     SELECT
       a.id AS assignment_id,
@@ -96,9 +97,9 @@ exports.getStudentRecentAssignments = async (studentId, gradeLevel, limit = 5) =
     LEFT JOIN assignment_submissions sub ON sub.assignment_id = a.id AND sub.student_id = ?
     WHERE a.grade_level = ?
     ORDER BY a.created_at DESC
-    LIMIT ?
+    LIMIT ${safeLimit}
     `,
-    [studentId, gradeLevel, limit]
+    [studentId, gradeLevel]
   );
 
   return rows;
@@ -109,7 +110,7 @@ exports.getStudentRecentAssignments = async (studentId, gradeLevel, limit = 5) =
  */
 exports.getStudentWeeklyProgress = async (studentId, gradeLevel) => {
   // Query completion & scores over the past 7 days / assignments
-  const [rows] = await pool.execute(
+  const [rows] = await pool.query(
     `
     SELECT
       DAYNAME(a.created_at) AS day_name,
@@ -127,7 +128,7 @@ exports.getStudentWeeklyProgress = async (studentId, gradeLevel) => {
   );
 
   // Overall completion & grade calculation scaled to 500
-  const [overallRows] = await pool.execute(
+  const [overallRows] = await pool.query(
     `
     SELECT
       COUNT(a.id) AS total_all,
@@ -188,6 +189,7 @@ exports.getStudentWeeklyProgress = async (studentId, gradeLevel) => {
  * Get upcoming events from events table
  */
 exports.getUpcomingEvents = async (categoryFilter = null, gradeLevel = null, limit = 5) => {
+  const safeLimit = Number.isInteger(Number(limit)) && Number(limit) > 0 ? Number(limit) : 5;
   let query = `
     SELECT DISTINCT
       e.id,
@@ -228,10 +230,9 @@ exports.getUpcomingEvents = async (categoryFilter = null, gradeLevel = null, lim
     params.push(gradeLevel);
   }
 
-  query += ` ORDER BY e.event_date ASC, e.event_time ASC LIMIT ?`;
-  params.push(limit);
+  query += ` ORDER BY e.event_date ASC, e.event_time ASC LIMIT ${safeLimit}`;
 
-  const [rows] = await pool.execute(query, params);
+  const [rows] = await pool.query(query, params);
   return rows;
 };
 
@@ -240,7 +241,7 @@ exports.getUpcomingEvents = async (categoryFilter = null, gradeLevel = null, lim
  */
 exports.getTeacherDashboardStats = async (teacherId) => {
   // Get teacher's teaching grade
-  const [profileRows] = await pool.execute(
+  const [profileRows] = await pool.query(
     `
     SELECT teaching_grade
     FROM teacher_profiles
@@ -255,7 +256,7 @@ exports.getTeacherDashboardStats = async (teacherId) => {
   // Count total students in teacher's grade
   let totalStudents = 0;
   if (teachingGrade) {
-    const [studentRows] = await pool.execute(
+    const [studentRows] = await pool.query(
       `
       SELECT COUNT(id) AS total
       FROM students
@@ -267,7 +268,7 @@ exports.getTeacherDashboardStats = async (teacherId) => {
   }
 
   // Teacher assignment stats
-  const [assignmentRows] = await pool.execute(
+  const [assignmentRows] = await pool.query(
     `
     SELECT
       COUNT(DISTINCT a.id) AS total_assignments,
@@ -295,7 +296,8 @@ exports.getTeacherDashboardStats = async (teacherId) => {
  * Get Teacher Recent Assignments
  */
 exports.getTeacherRecentAssignments = async (teacherId, limit = 5) => {
-  const [rows] = await pool.execute(
+  const safeLimit = Number.isInteger(Number(limit)) && Number(limit) > 0 ? Number(limit) : 5;
+  const [rows] = await pool.query(
     `
     SELECT
       a.id AS assignment_id,
@@ -313,9 +315,9 @@ exports.getTeacherRecentAssignments = async (teacherId, limit = 5) => {
     WHERE a.teacher_id = ?
     GROUP BY a.id
     ORDER BY a.created_at DESC
-    LIMIT ?
+    LIMIT ${safeLimit}
     `,
-    [teacherId, limit]
+    [teacherId]
   );
 
   return rows;
